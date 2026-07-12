@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>原神プロフィール格付け</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+</head>
+
+<body class="home-page">
+
+    <main class="container">
+
+        <section class="input-card">
+
+            <p class="eyebrow">
+                GENSHIN PROFILE RANK
+            </p>
+
+            <h1>
+                原神プロフィール格付け
+            </h1>
+
+            <p class="description">
+                UIDを入力すると、Enka.Networkの公開プロフィールをもとに、
+                100点満点で自動採点します。
+            </p>
+
+            {% if error %}
+
+                <div class="error-message">
+                    {{ error }}
+                </div>
+
+            {% endif %}
+
+            <form
+                action="{{ url_for('rank') }}"
+                method="GET"
+            >
+
+                <label for="uid">
+                    原神UID
+                </label>
+
+                <input
+                    id="uid"
+                    type="text"
+                    name="uid"
+                    value="{{ entered_uid or '' }}"
+                    placeholder="例：800123456"
+                    inputmode="numeric"
+                    maxlength="9"
+                    autocomplete="off"
+                    required
+                >
+
+                <button type="submit">
+                    採点する
+                </button>
+
+            </form>
+
+            <a
+                class="criteria-button"
+                href="{{ url_for('criteria') }}"
+            >
+                採点基準を見る
+            </a>
+
+            <p class="notice">
+                ゲーム内プロフィールで戦績を公開してから採点してください。
+            </p>
+
+        </section>
+
+    </main>
+
+</body>
+
+</html>

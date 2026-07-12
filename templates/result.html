@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {{ player.nickname }}｜原神プロフィール格付け
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <!-- HTML要素を画像化するライブラリ -->
+    <script
+        src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"
+        defer
+    ></script>
+
+    <!-- このページ専用のJavaScript -->
+    <script
+        src="{{ url_for('static', filename='js/result.js') }}"
+        defer
+    ></script>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <header class="page-header">
+
+            <p class="eyebrow">
+                GENSHIN PROFILE RANK
+            </p>
+
+            <h1>
+                原神プロフィール格付け
+            </h1>
+
+        </header>
+
+        <!-- この範囲を画像にします -->
+        <section
+            id="capture-area"
+            class="result-card rank-{{ rank | lower | replace('+', 'plus') }}"
+            data-nickname="{{ player.nickname }}"
+            data-uid="{{ uid }}"
+        >
+
+            <div class="player-info">
+
+                {% if icon_url %}
+
+                    <img
+                        src="{{ icon_url }}"
+                        alt="{{ player.nickname }}のプロフィール画像"
+                        class="profile-icon"
+                        crossorigin="anonymous"
+                    >
+
+                {% endif %}
+
+                <h2>
+                    {{ player.nickname }}
+                </h2>
+
+                <p>
+                    UID：{{ uid }}
+                </p>
+
+            </div>
+
+            <div class="rank-box">
+
+                <p class="rank-label">
+                    総合ランク
+                </p>
+
+                <div class="rank">
+                    {{ rank }}
+                </div>
+
+                <div class="score">
+                    {{ total }}
+                    <span>/ 100</span>
+                </div>
+
+                <div class="total-progress">
+
+                    <div
+                        class="total-progress-fill"
+                        style="width: {{ total }}%;"
+                    ></div>
+
+                </div>
+
+            </div>
+
+            <div class="score-list">
+
+                <!-- 深境螺旋 -->
+                <article class="score-item">
+
+                    <div class="score-item-header">
+
+                        <div>
+
+                            <h3>
+                                深境螺旋
+                            </h3>
+
+                            <p>
+                                {{ player.abyss_floor }}-{{ player.abyss_level }}
+                                ／ ★{{ player.abyss_stars }}
+                            </p>
+
+                        </div>
+
+                        <strong>
+                            {{ abyss_score }} / 20
+                        </strong>
+
+                    </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ abyss_score / 20 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                </article>
+
+                <!-- 幻想シアター -->
+                <article class="score-item">
+
+                    <div class="score-item-header">
+
+                        <div>
+
+                            <h3>
+                                幻想シアター
+                            </h3>
+
+                            <p>
+                                第{{ player.theater_act }}幕
+                                ／ ★{{ player.theater_stars }}
+                            </p>
+
+                        </div>
+
+                        <strong>
+                            {{ theater_score }} / 20
+                        </strong>
+
+                    </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ theater_score / 20 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                </article>
+
+                <!-- 幽境の激戦 -->
+                <article class="score-item">
+
+                    <div class="score-item-header">
+
+                        <div>
+
+                            <h3>
+                                幽境の激戦
+                            </h3>
+
+                            <p>
+                                難易度 {{ stygian_roman }}
+
+                                {% if stygian_clear_time %}
+
+                                    ／ {{ stygian_clear_time }}秒
+
+                                {% else %}
+
+                                    ／ 未挑戦
+
+                                {% endif %}
+                            </p>
+
+                        </div>
+
+                        <strong>
+                            {{ stygian_score }} / 20
+                        </strong>
+
+                    </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ stygian_score / 20 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                </article>
+
+                <!-- アチーブメント -->
+                <article class="score-item">
+
+                    <div class="score-item-header">
+
+                        <div>
+
+                            <h3>
+                                アチーブメント
+                            </h3>
+
+                            <p>
+                                {{ player.achievements }}
+                                / {{ theory_achievement }}
+                                （{{ "%.2f" | format(achievement_rate) }}%）
+                            </p>
+
+                        </div>
+
+                        <strong>
+                            {{ achievement_score }} / 30
+                        </strong>
+
+                    </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ achievement_score / 30 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                </article>
+
+                <!-- 冒険ランク -->
+                <article class="score-item">
+
+                    <div class="score-item-header">
+
+                        <div>
+
+                            <h3>
+                                冒険ランク
+                            </h3>
+
+                            <p>
+                                AR {{ player.level }}
+                            </p>
+
+                        </div>
+
+                        <strong>
+                            {{ ar_score }} / 10
+                        </strong>
+
+                    </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ ar_score / 10 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                </article>
+
+            </div>
+
+            <!-- ここから下は保存画像に含めません -->
+            <div
+                class="result-actions"
+                data-html2canvas-ignore="true"
+            >
+
+                <button
+                    id="download-image-button"
+                    type="button"
+                    class="download-button"
+                >
+                    結果画像を保存
+                </button>
+
+                <a
+                    class="criteria-button"
+                    href="{{ url_for('criteria') }}"
+                >
+                    採点基準を見る
+                </a>
+
+                <a
+                    class="back-button"
+                    href="{{ url_for('home') }}"
+                >
+                    別のUIDを採点する
+                </a>
+
+                <p
+                    id="download-status"
+                    class="download-status"
+                    aria-live="polite"
+                ></p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</body>
+
+</html>
