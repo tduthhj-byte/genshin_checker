@@ -17,11 +17,16 @@ document.addEventListener("DOMContentLoaded", () => {
             statusMessage.textContent = "";
         }
 
+        // 保存時だけランク文字を通常の金色表示にする
+        resultCard.classList.add("capture-mode");
+
         try {
-            /*
-             * ボタン類は画像に含めないため、
-             * data-html2canvas-ignore 属性を付けています。
-             */
+            await new Promise((resolve) => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(resolve);
+                });
+            });
+
             const canvas = await html2canvas(resultCard, {
                 backgroundColor: "#151722",
                 scale: 2,
@@ -55,17 +60,18 @@ document.addEventListener("DOMContentLoaded", () => {
             link.remove();
 
             if (statusMessage) {
-                statusMessage.textContent =
-                    "結果画像を保存しました。";
+                statusMessage.textContent = "結果画像を保存しました。";
             }
         } catch (error) {
             console.error("画像生成エラー:", error);
 
             if (statusMessage) {
                 statusMessage.textContent =
-                    "画像を作成できませんでした。ブラウザを更新して、もう一度お試しください。";
+                    "画像を作成できませんでした。もう一度お試しください。";
             }
         } finally {
+            resultCard.classList.remove("capture-mode");
+
             downloadButton.disabled = false;
             downloadButton.textContent = originalText;
         }

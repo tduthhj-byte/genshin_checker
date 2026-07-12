@@ -588,3 +588,18 @@ button:hover,
         0 0 12px rgba(245, 216, 118, 0.75),
         0 0 30px rgba(245, 216, 118, 0.35) !important;
 }
+/* 保存画像ではランクを通常の金色文字で表示 */
+#capture-area.capture-mode .rank {
+    background: none !important;
+    background-image: none !important;
+
+    background-clip: border-box !important;
+    -webkit-background-clip: border-box !important;
+
+    color: #f5d876 !important;
+    -webkit-text-fill-color: #f5d876 !important;
+
+    text-shadow:
+        0 0 12px rgba(245, 216, 118, 0.7),
+        0 0 26px rgba(245, 216, 118, 0.3) !important;
+}
