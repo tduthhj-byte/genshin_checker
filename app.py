@@ -61,12 +61,12 @@ def rank():
             entered_uid=uid_text,
         )
 
-    if len(uid_text) != 9:
-        return render_template(
-            "index.html",
-            error="UIDは9桁で入力してください。",
-            entered_uid=uid_text,
-        )
+    if len(uid_text) not in (9, 10):
+    return render_template(
+        "index.html",
+        error="UIDは9桁または10桁で入力してください。",
+        entered_uid=uid_text,
+    )
 
     uid = int(uid_text)
 
