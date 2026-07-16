@@ -1,180 +1,171 @@
 # score.py
 
 THEORY_ACHIEVEMENT = 1757
+THEORY_FRIENDSHIP_COUNT = 115
+
+THEORY_THEATER_ACT = 10
+THEORY_THEATER_STARS = 12
+
+THEORY_STYGIAN_CLEAR_TIME = 54
+THEORY_STYGIAN_POINT = 1800
+
+THEORY_ABYSS_STARS = 36
 
 
-# ======================
-# 冒険ランク（10点）
-# ======================
-def score_ar(ar: int) -> int:
-    if ar >= 60:
-        return 10
-    elif ar == 59:
-        return 9
-    elif ar == 58:
-        return 8
-    elif ar == 57:
-        return 7
-    elif ar == 56:
-        return 6
-    elif ar == 55:
-        return 5
-    elif ar >= 50:
-        return 4
-    elif ar >= 45:
-        return 3
-    elif ar >= 40:
-        return 2
-    elif ar >= 30:
-        return 1
-    else:
-        return 0
+def to_int(value) -> int:
+    """Noneや文字列を安全に整数へ変換する。"""
 
-
-# ======================
-# 深境螺旋（20点）
-# ======================
-def score_abyss(stars: int) -> int:
-    if stars >= 36:
-        return 20
-    elif stars >= 33:
-        return 18
-    elif stars >= 30:
-        return 15
-    elif stars >= 27:
-        return 10
-    elif stars >= 18:
-        return 5
-    else:
-        return 0
-
-
-# ======================
-# 幻想シアター（20点）
-# ======================
-def score_theater(act: int, stars: int) -> int:
-    if act <= 0:
-        return 0
-
-    if act >= 10:
-        if stars >= 12:
-            return 20
-        elif stars >= 10:
-            return 18
-        elif stars >= 8:
-            return 15
-        else:
-            return 14
-
-    if act == 9:
-        return 14
-    elif act == 8:
-        return 12
-    elif act == 7:
-        return 10
-    elif act == 6:
-        return 8
-    else:
-        return 5
-
-
-# ======================
-# 幽境の激戦（20点）
-# ======================
-def score_stygian(difficulty, clear_time) -> int:
     try:
-        difficulty = int(difficulty)
+        return int(value or 0)
     except (TypeError, ValueError):
         return 0
 
-    try:
-        clear_time = int(clear_time)
-    except (TypeError, ValueError):
-        clear_time = 0
+
+# ======================
+# 幽境の激戦ポイント
+# ======================
+def calculate_stygian_point(
+    difficulty,
+    clear_time,
+) -> int:
+    difficulty = to_int(difficulty)
+    clear_time = to_int(clear_time)
 
     if difficulty >= 6:
         if 0 < clear_time <= 180:
-            return 20
-        return 18
+            return 1800
+
+        return 1600
 
     elif difficulty == 5:
-        return 15
+        return 1200
+
     elif difficulty == 4:
-        return 12
+        return 800
+
     elif difficulty == 3:
-        return 8
-    elif difficulty == 2:
-        return 5
-    elif difficulty == 1:
-        return 2
-    else:
-        return 0
+        return 400
+
+    return 0
 
 
 # ======================
-# アチーブメント（30点）
+# プロフィール値
 # ======================
-def score_achievement(achievement: int) -> int:
-    if THEORY_ACHIEVEMENT <= 0:
-        return 0
+def calculate_profile_value(
+    achievements,
+    theater_act,
+    theater_stars,
+    friendship_count,
+    abyss_stars,
+    stygian_difficulty,
+    stygian_clear_time,
+) -> int:
+    achievements = to_int(achievements)
+    theater_act = to_int(theater_act)
+    theater_stars = to_int(theater_stars)
+    friendship_count = to_int(friendship_count)
+    abyss_stars = to_int(abyss_stars)
+    stygian_difficulty = to_int(stygian_difficulty)
+    stygian_clear_time = to_int(stygian_clear_time)
 
-    rate = achievement / THEORY_ACHIEVEMENT * 100
+    theater_value = (
+        10
+        * theater_act
+        * theater_stars
+    )
 
-    if rate >= 100:
-        return 30
-    elif rate >= 99:
-        return 29
-    elif rate >= 98:
-        return 28
-    elif rate >= 97:
-        return 27
-    elif rate >= 96:
-        return 26
-    elif rate >= 95:
-        return 25
-    elif rate >= 90:
-        return 23
-    elif rate >= 85:
-        return 20
-    elif rate >= 80:
-        return 17
-    elif rate >= 70:
-        return 13
-    elif rate >= 60:
-        return 9
-    elif rate >= 50:
-        return 6
-    elif rate >= 40:
-        return 3
-    elif rate >= 30:
-        return 2
-    elif rate >= 20:
-        return 1
+    friendship_value = friendship_count * 10
+
+    if stygian_clear_time > 0:
+        stygian_time_value = max(
+            360 - stygian_clear_time,
+            0,
+        )
     else:
+        stygian_time_value = 0
+
+    stygian_point = calculate_stygian_point(
+        stygian_difficulty,
+        stygian_clear_time,
+    )
+
+    base_value = (
+        achievements
+        + theater_value
+        + friendship_value
+        + stygian_time_value
+        + stygian_point
+    )
+
+    return base_value * abyss_stars
+
+
+# ======================
+# 理論プロフィール値
+# ======================
+THEORETICAL_PROFILE_VALUE = (
+    (
+        THEORY_ACHIEVEMENT
+        + (
+            10
+            * THEORY_THEATER_ACT
+            * THEORY_THEATER_STARS
+        )
+        + THEORY_FRIENDSHIP_COUNT * 10
+        + (
+            360
+            - THEORY_STYGIAN_CLEAR_TIME
+        )
+        + THEORY_STYGIAN_POINT
+    )
+    * THEORY_ABYSS_STARS
+)
+
+
+# ======================
+# 100点満点への換算
+# ======================
+def calculate_total_score(
+    profile_value,
+) -> int:
+    """
+    理論プロフィール値を100点として換算する。
+    """
+
+    profile_value = to_int(profile_value)
+
+    if THEORETICAL_PROFILE_VALUE <= 0:
         return 0
+
+    score = (
+        profile_value
+        / THEORETICAL_PROFILE_VALUE
+        * 100
+    )
+
+    return min(round(score), 100)
 
 
 # ======================
 # 総合ランク
 # ======================
 def rank_name(total: int) -> str:
-    if total >= 98:
+    if total >= 95:
         return "SSS"
-    elif total >= 95:
-        return "SS+"
     elif total >= 90:
-        return "SS"
+        return "SS+"
     elif total >= 85:
-        return "S"
+        return "SS"
     elif total >= 80:
-        return "A+"
-    elif total >= 75:
-        return "A"
+        return "S"
     elif total >= 70:
-        return "B+"
+        return "A+"
     elif total >= 60:
-        return "B"
+        return "A"
     elif total >= 50:
+        return "B"
+    elif total >= 35:
         return "C"
     else:
         return "D"

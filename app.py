@@ -2,13 +2,11 @@ from flask import Flask, render_template, request
 
 from enka_api import get_profile
 from score import (
+    THEORETICAL_PROFILE_VALUE,
     THEORY_ACHIEVEMENT,
+    calculate_profile_value,
+    calculate_total_score,
     rank_name,
-    score_abyss,
-    score_achievement,
-    score_ar,
-    score_stygian,
-    score_theater,
 )
 
 app = Flask(__name__)
@@ -63,10 +61,10 @@ def rank():
 
     if len(uid_text) not in (9, 10):
         return render_template(
-        "index.html",
-        error="UIDは9桁または10桁で入力してください。",
-        entered_uid=uid_text,
-    )
+            "index.html",
+            error="UIDは9桁または10桁で入力してください。",
+            entered_uid=uid_text,
+        )
 
     uid = int(uid_text)
 
@@ -74,7 +72,6 @@ def rank():
         showcase = get_profile(uid)
         player = showcase.player
 
-        ar = player.level or 0
         achievements = player.achievements or 0
         abyss_stars = player.abyss_stars or 0
         theater_act = player.theater_act or 0
@@ -82,28 +79,24 @@ def rank():
         stygian_difficulty = player.stygian_difficulty or 0
         stygian_clear_time = player.stygian_clear_time or 0
 
-        ar_score = score_ar(ar)
-        abyss_score = score_abyss(abyss_stars)
-
-        theater_score = score_theater(
-            theater_act,
-            theater_stars,
+        friendship_count = (
+            player.max_friendship_character_count or 0
         )
 
-        stygian_score = score_stygian(
-            stygian_difficulty,
-            stygian_clear_time,
+        # Enkaでは幽境の挑戦回数を取得できないため0にする
+        stygian_count = 0
+
+        profile_value = calculate_profile_value(
+            achievements=achievements,
+            theater_act=theater_act,
+            theater_stars=theater_stars,
+            friendship_count=friendship_count,
+            abyss_stars=abyss_stars,
+            stygian_difficulty=stygian_difficulty,
+            stygian_clear_time=stygian_clear_time,
         )
 
-        achievement_score = score_achievement(achievements)
-
-        total = (
-            abyss_score
-            + theater_score
-            + stygian_score
-            + achievement_score
-            + ar_score
-        )
+        total = calculate_total_score(profile_value)
 
         rank_result = rank_name(total)
 
@@ -129,13 +122,11 @@ def rank():
             uid=uid,
             total=total,
             rank=rank_result,
-            ar_score=ar_score,
-            abyss_score=abyss_score,
-            theater_score=theater_score,
-            stygian_score=stygian_score,
-            achievement_score=achievement_score,
+            profile_value=profile_value,
+            friendship_count=friendship_count,
             theory_achievement=THEORY_ACHIEVEMENT,
             achievement_rate=achievement_rate,
+            stygian_difficulty=stygian_difficulty,
             stygian_roman=stygian_roman,
             stygian_clear_time=stygian_clear_time,
             icon_url=icon_url,
@@ -161,4 +152,3 @@ if __name__ == "__main__":
         port=5000,
         debug=True,
     )
-    

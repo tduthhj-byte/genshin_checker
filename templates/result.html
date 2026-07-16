@@ -106,6 +106,27 @@
 
             <div class="score-list">
 
+<!-- プロフィール値 -->
+<article class="score-item">
+
+    <div class="score-item-header">
+
+        <div>
+
+            <h3>
+                プロフィール値
+            </h3>
+
+        </div>
+
+        <strong>
+            {{ "{:,}".format(profile_value) }}
+        </strong>
+
+    </div>
+
+</article>
+
                 <!-- 深境螺旋 -->
                 <article class="score-item">
 
@@ -118,24 +139,23 @@
                             </h3>
 
                             <p>
-                                {{ player.abyss_floor }}-{{ player.abyss_level }}
-                                ／ ★{{ player.abyss_stars }}
+                                {% if player.abyss_floor and player.abyss_level %}
+
+                                    {{ player.abyss_floor }}-{{ player.abyss_level }}
+                                    ／ ★{{ player.abyss_stars }}
+
+                                {% else %}
+
+                                    ★{{ player.abyss_stars or 0 }}
+
+                                {% endif %}
                             </p>
 
                         </div>
 
                         <strong>
-                            {{ abyss_score }} / 20
+                            × {{ player.abyss_stars or 0 }}
                         </strong>
-
-                    </div>
-
-                    <div class="progress">
-
-                        <div
-                            class="progress-fill"
-                            style="width: {{ abyss_score / 20 * 100 }}%;"
-                        ></div>
 
                     </div>
 
@@ -153,24 +173,17 @@
                             </h3>
 
                             <p>
-                                第{{ player.theater_act }}幕
-                                ／ ★{{ player.theater_stars }}
+                                第{{ player.theater_act or 0 }}幕
+                                ／ ★{{ player.theater_stars or 0 }}
                             </p>
 
                         </div>
 
-                        <strong>
-                            {{ theater_score }} / 20
-                        </strong>
-
-                    </div>
-
-                    <div class="progress">
-
-                        <div
-                            class="progress-fill"
-                            style="width: {{ theater_score / 20 * 100 }}%;"
-                        ></div>
+                        
+                            <strong>
+                                +{{ 10 * (player.theater_act or 0) * (player.theater_stars or 0) }}
+                            </strong>
+                        
 
                     </div>
 
@@ -188,33 +201,33 @@
                             </h3>
 
                             <p>
-                                難易度 {{ stygian_roman }}
+                                {% if stygian_difficulty %}
 
-                                {% if stygian_clear_time %}
+                                    難易度 {{ stygian_roman }}
 
-                                    ／ {{ stygian_clear_time }}秒
+                                    {% if stygian_clear_time %}
+
+                                        ／ {{ stygian_clear_time }}秒
+
+                                    {% endif %}
 
                                 {% else %}
 
-                                    ／ 未挑戦
+                                    未挑戦
 
                                 {% endif %}
                             </p>
 
                         </div>
 
-                        <strong>
-                            {{ stygian_score }} / 20
-                        </strong>
-
-                    </div>
-
-                    <div class="progress">
-
-                        <div
-                            class="progress-fill"
-                            style="width: {{ stygian_score / 20 * 100 }}%;"
-                        ></div>
+                    <strong>
+                        {% if stygian_clear_time %}
+                            + {{ 360 - stygian_clear_time }}
+                        {% else %}
+                            + 0
+                        {% endif %}
+                    </strong>
+                        
 
                     </div>
 
@@ -232,7 +245,7 @@
                             </h3>
 
                             <p>
-                                {{ player.achievements }}
+                                {{ player.achievements or 0 }}
                                 / {{ theory_achievement }}
                                 （{{ "%.2f" | format(achievement_rate) }}%）
                             </p>
@@ -240,17 +253,33 @@
                         </div>
 
                         <strong>
-                            {{ achievement_score }} / 30
+                            + {{ player.achievements or 0 }}
                         </strong>
 
                     </div>
 
-                    <div class="progress">
+                </article>
 
-                        <div
-                            class="progress-fill"
-                            style="width: {{ achievement_score / 30 * 100 }}%;"
-                        ></div>
+                <!-- 好感度MAXキャラ -->
+                <article class="score-item">
+
+                    <div class="score-item-header">
+
+                        <div>
+
+                            <h3>
+                                好感度MAXキャラ
+                            </h3>
+
+                            <p>
+                                {{ friendship_count }} 人
+                            </p>
+
+                        </div>
+
+                        <strong>
+                            + {{ friendship_count * 10 }}
+                        </strong>
 
                     </div>
 
@@ -268,23 +297,14 @@
                             </h3>
 
                             <p>
-                                AR {{ player.level }}
+                                AR {{ player.level or 0 }}
                             </p>
 
                         </div>
 
                         <strong>
-                            {{ ar_score }} / 10
+                            参考情報
                         </strong>
-
-                    </div>
-
-                    <div class="progress">
-
-                        <div
-                            class="progress-fill"
-                            style="width: {{ ar_score / 10 * 100 }}%;"
-                        ></div>
 
                     </div>
 
