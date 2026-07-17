@@ -44,6 +44,14 @@
 
             {% endif %}
 
+            {% if ranking_error %}
+
+                <div class="error-message">
+                    {{ ranking_error }}
+                </div>
+
+            {% endif %}
+
             <form
                 action="{{ url_for('rank') }}"
                 method="GET"
@@ -54,16 +62,16 @@
                 </label>
 
                 <input
-    id="uid"
-    type="text"
-    name="uid"
-    value="{{ entered_uid or '' }}"
-    placeholder="例：800123456 または 1800123456"
-    inputmode="numeric"
-    maxlength="10"
-    autocomplete="off"
-    required
->
+                    id="uid"
+                    type="text"
+                    name="uid"
+                    value="{{ entered_uid or '' }}"
+                    placeholder="例：800123456 または 1800123456"
+                    inputmode="numeric"
+                    maxlength="10"
+                    autocomplete="off"
+                    required
+                >
 
                 <button type="submit">
                     採点する
@@ -71,17 +79,102 @@
 
             </form>
 
-            <a
-                class="criteria-button"
-                href="{{ url_for('criteria') }}"
-            >
-                採点基準を見る
-            </a>
+            <div class="home-links">
+
+    <a
+        class="home-menu-button"
+        href="{{ url_for('criteria') }}"
+    >
+        📖 採点基準を見る
+    </a>
+
+    <a
+        class="home-menu-button"
+        href="{{ url_for('ranking') }}"
+    >
+        🏆 ランキングを見る
+    </a>
+
+</div>
+
+            {% if ranking_count is defined %}
+
+                <p class="ranking-count">
+                    現在のランキング登録者数：
+                    <strong>{{ ranking_count }}人</strong>
+                </p>
+
+            {% endif %}
 
             <p class="notice">
                 ゲーム内プロフィールで戦績を公開してから採点してください。
             </p>
+                <div class="credit">
 
+    <p>
+        <strong>Created by</strong><br>
+
+        <a
+            href="https://x.com/sumire3rd_GI"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            Sumire3rd
+        </a>
+
+        <br>
+
+        <a
+            href="https://x.com/sumire3rd_GI"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            𝕏 @sumire3rd_GI
+        </a>
+    </p>
+
+    <p>
+        <strong>Scoring Formula by</strong><br>
+
+        <a
+            href="https://x.com/Volmr9"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            つぐちゃん
+        </a>
+
+        <br>
+
+        <a
+            href="https://x.com/Volmr9"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            𝕏 @Volmr9
+        </a>
+    </p>
+
+    <p>
+        Powered by
+        <a
+            href="https://enka.network/"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            Enka.Network
+        </a>
+    </p>
+
+    <p>
+        Genshin Impact © COGNOSPHERE / HoYoverse
+    </p>
+
+    <p class="credit-note">
+        ※ 本サイトは非公式のファンサイトです。
+    </p>
+
+</div>
         </section>
 
     </main>

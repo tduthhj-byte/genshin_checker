@@ -5,3 +5,6 @@ venv/
 .env
 .vscode/
 .enka_py/
+
+ranking.db
+ranking.db-journal

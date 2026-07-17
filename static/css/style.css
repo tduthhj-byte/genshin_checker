@@ -831,3 +831,353 @@ button:hover,
         font-size: 0.95rem;
     }
 }
+.ranking-register-box {
+    margin-top: 28px;
+    padding: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ranking-register-box h3 {
+    margin: 0 0 12px;
+}
+
+.ranking-register-box p {
+    margin: 8px 0;
+    line-height: 1.7;
+}
+
+.ranking-register-form {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+
+.ranking-register-success {
+    display: grid;
+    gap: 10px;
+}
+.ranking-card {
+    padding: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ranking-count {
+    margin-top: 12px;
+}
+
+.ranking-list {
+    display: grid;
+    gap: 16px;
+}
+
+.ranking-item {
+    display: grid;
+    grid-template-columns: 90px minmax(0, 1fr) auto;
+    gap: 20px;
+    align-items: center;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ranking-first {
+    border-color: rgba(255, 215, 0, 0.55);
+}
+
+.ranking-second {
+    border-color: rgba(210, 210, 210, 0.45);
+}
+
+.ranking-third {
+    border-color: rgba(205, 127, 50, 0.55);
+}
+
+.ranking-position {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    min-width: 70px;
+    font-weight: 700;
+}
+
+.ranking-medal {
+    font-size: 2.2rem;
+}
+
+.ranking-number {
+    font-size: 1.9rem;
+}
+
+.ranking-unit {
+    margin-left: 4px;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.ranking-player {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    min-width: 0;
+}
+
+.ranking-icon {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.ranking-icon-empty {
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 1.4rem;
+}
+
+.ranking-player-text {
+    min-width: 0;
+}
+
+.ranking-player-text h2 {
+    margin: 0 0 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ranking-player-text p {
+    margin: 3px 0;
+    opacity: 0.72;
+}
+
+.ranking-result {
+    display: flex;
+    gap: 22px;
+    align-items: center;
+    text-align: right;
+}
+
+.ranking-profile-value,
+.ranking-score,
+.ranking-rank {
+    display: grid;
+    gap: 5px;
+}
+
+.ranking-result span {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.ranking-profile-value strong {
+    font-size: 1.45rem;
+}
+
+.ranking-score strong,
+.ranking-rank strong {
+    font-size: 1.2rem;
+}
+
+.ranking-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+
+.ranking-empty {
+    padding: 48px 20px;
+    text-align: center;
+}
+
+@media (max-width: 760px) {
+    .ranking-item {
+        grid-template-columns: 56px minmax(0, 1fr);
+    }
+
+    .ranking-position {
+        min-width: 50px;
+    }
+
+    .ranking-medal {
+        font-size: 1.8rem;
+    }
+
+    .ranking-icon {
+        width: 58px;
+        height: 58px;
+    }
+
+    .ranking-result {
+        grid-column: 1 / -1;
+        justify-content: space-between;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: left;
+    }
+}
+.home-links {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.home-links a {
+    text-decoration: none;
+}
+
+.ranking-count {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 0.95rem;
+    opacity: 0.8;
+}
+
+.ranking-actions{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    margin-top:35px;
+    flex-wrap:wrap;
+}
+
+.ranking-actions a{
+    text-decoration:none;
+}
+.ranking-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.ranking-action-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 220px;
+    min-height: 52px;
+    padding: 14px 24px;
+    border-radius: 14px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: all .2s ease;
+}
+
+.ranking-action-button:hover {
+    transform: translateY(-2px);
+}
+
+.ranking-action-button.primary {
+    background: #4f8cff;
+    color: #fff;
+}
+
+.ranking-action-button.primary:hover {
+    background: #3d78e0;
+}
+
+.ranking-action-button.secondary {
+    background: #2f3446;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.15);
+}
+
+.ranking-action-button.secondary:hover {
+    background: #3a4055;
+}
+
+@media (max-width: 640px) {
+
+    .ranking-action-button {
+        width: 100%;
+    }
+
+}
+.home-links {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 52px;
+}
+
+.home-menu-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 250px;
+    min-height: 84px;
+    padding: 16px 28px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    color: #ffffff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.home-menu-button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(244, 209, 111, 0.55);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 640px) {
+    .home-links {
+        margin-top: 34px;
+    }
+
+    .home-menu-button {
+        width: 100%;
+        min-width: 0;
+        min-height: 68px;
+    }
+}
+.credit {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    text-align: center;
+    color: rgba(255,255,255,.65);
+    line-height: 1.8;
+    font-size: .9rem;
+}
+
+.credit p {
+    margin: 8px 0;
+}
+
+.credit a {
+    color: #f4d16f;
+    text-decoration: none;
+}
+
+.credit a:hover {
+    text-decoration: underline;
+}
+
+.credit-note {
+    margin-top: 12px;
+    font-size: .8rem;
+    opacity: .75;
+}

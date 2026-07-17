@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        プロフィール値ランキング｜原神プロフィール格付け
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+</head>
+
+<body>
+
+    <main class="container">
+
+        <header class="page-header">
+
+            <p class="eyebrow">
+                PROFILE VALUE RANKING
+            </p>
+
+            <h1>
+                プロフィール値ランキング
+            </h1>
+
+            <p class="description">
+                当サイトで登録された公開プロフィールを、
+                プロフィール値の高い順に表示しています。
+            </p>
+
+            <p class="ranking-count">
+                現在の登録人数：
+                <strong>{{ ranking_count }}人</strong>
+            </p>
+
+        </header>
+
+        <section class="ranking-card">
+
+            {% if ranking_entries %}
+
+                <div class="ranking-list">
+
+                    {% for entry in ranking_entries %}
+
+                        <article
+                            class="ranking-item
+                            {% if entry.position == 1 %}
+                                ranking-first
+                            {% elif entry.position == 2 %}
+                                ranking-second
+                            {% elif entry.position == 3 %}
+                                ranking-third
+                            {% endif %}
+                            "
+                        >
+
+                            <div class="ranking-position">
+
+                                {% if entry.position == 1 %}
+
+                                    <span class="ranking-medal">
+                                        🥇
+                                    </span>
+
+                                {% elif entry.position == 2 %}
+
+                                    <span class="ranking-medal">
+                                        🥈
+                                    </span>
+
+                                {% elif entry.position == 3 %}
+
+                                    <span class="ranking-medal">
+                                        🥉
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="ranking-number">
+                                        {{ entry.position }}
+                                    </span>
+
+                                    <span class="ranking-unit">
+                                        位
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                            <div class="ranking-player">
+
+                                {% if entry.icon_url %}
+
+                                    <img
+                                        src="{{ entry.icon_url }}"
+                                        alt="{{ entry.nickname }}のプロフィール画像"
+                                        class="ranking-icon"
+                                        crossorigin="anonymous"
+                                    >
+
+                                {% else %}
+
+                                    <div class="ranking-icon ranking-icon-empty">
+                                        ?
+                                    </div>
+
+                                {% endif %}
+
+                                <div class="ranking-player-text">
+
+                                    <h2>
+                                        {{ entry.nickname }}
+                                    </h2>
+
+                                    <p>
+                                        UID：{{ entry.masked_uid }}
+                                    </p>
+
+                                    <p>
+                                        更新：
+                                        {{ entry.updated_at[:10] }}
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                            <div class="ranking-result">
+
+                                <div class="ranking-profile-value">
+
+                                    <span>
+                                        プロフィール値
+                                    </span>
+
+                                    <strong>
+                                        {{ "{:,}".format(entry.profile_value) }}
+                                    </strong>
+
+                                </div>
+
+                                <div class="ranking-score">
+
+                                    <span>
+                                        総合スコア
+                                    </span>
+
+                                    <strong>
+                                        {{ entry.total_score }}
+                                    </strong>
+
+                                </div>
+
+                                <div
+                                    class="ranking-rank rank-{{ entry.rank_name | lower | replace('+', 'plus') }}"
+                                >
+
+                                    <span>
+                                        ランク
+                                    </span>
+
+                                    <strong>
+                                        {{ entry.rank_name }}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="ranking-empty">
+
+                    <h2>
+                        まだランキング登録者がいません
+                    </h2>
+
+                    <p>
+                        UIDを採点して、
+                        最初のランキング登録者になってください。
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+            <div class="ranking-actions">
+
+                <a
+                    class="ranking-action-button primary"
+                    href="{{ url_for('home') }}"
+                >
+                    🔍 UIDを採点する
+                </a>
+
+                <a
+                    class="ranking-action-button secondary"
+                    href="{{ url_for('criteria') }}"
+                >
+                    📖 採点基準を見る
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</body>
+
+</html>

@@ -18,13 +18,11 @@
         href="{{ url_for('static', filename='css/style.css') }}"
     >
 
-    <!-- HTML要素を画像化するライブラリ -->
     <script
         src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"
         defer
     ></script>
 
-    <!-- このページ専用のJavaScript -->
     <script
         src="{{ url_for('static', filename='js/result.js') }}"
         defer
@@ -47,7 +45,6 @@
 
         </header>
 
-        <!-- この範囲を画像にします -->
         <section
             id="capture-area"
             class="result-card rank-{{ rank | lower | replace('+', 'plus') }}"
@@ -55,6 +52,7 @@
             data-uid="{{ uid }}"
         >
 
+            <!-- プレイヤー情報 -->
             <div class="player-info">
 
                 {% if icon_url %}
@@ -78,6 +76,7 @@
 
             </div>
 
+            <!-- 総合結果 -->
             <div class="rank-box">
 
                 <p class="rank-label">
@@ -90,14 +89,18 @@
 
                 <div class="score">
                     {{ total }}
-                    <span>/ 100</span>
+                    <span>/ {{ max_total_score }}</span>
                 </div>
+
+                <p class="score-detail">
+                    基本100点＋ボーナス最大10点
+                </p>
 
                 <div class="total-progress">
 
                     <div
                         class="total-progress-fill"
-                        style="width: {{ total }}%;"
+                        style="width: {{ [total / max_total_score * 100, 100] | min }}%;"
                     ></div>
 
                 </div>
@@ -106,28 +109,7 @@
 
             <div class="score-list">
 
-<!-- プロフィール値 -->
-<article class="score-item">
-
-    <div class="score-item-header">
-
-        <div>
-
-            <h3>
-                プロフィール値
-            </h3>
-
-        </div>
-
-        <strong>
-            {{ "{:,}".format(profile_value) }}
-        </strong>
-
-    </div>
-
-</article>
-
-                <!-- 深境螺旋 -->
+                <!-- プロフィール値 -->
                 <article class="score-item">
 
                     <div class="score-item-header">
@@ -135,29 +117,63 @@
                         <div>
 
                             <h3>
-                                深境螺旋
+                                プロフィール値
                             </h3>
 
                             <p>
-                                {% if player.abyss_floor and player.abyss_level %}
-
-                                    {{ player.abyss_floor }}-{{ player.abyss_level }}
-                                    ／ ★{{ player.abyss_stars }}
-
-                                {% else %}
-
-                                    ★{{ player.abyss_stars or 0 }}
-
-                                {% endif %}
+                                理論値：
+                                {{ "{:,}".format(theoretical_profile_value) }}
                             </p>
 
                         </div>
 
                         <strong>
-                            × {{ player.abyss_stars or 0 }}
+                            {{ "{:,}".format(profile_value) }}
                         </strong>
 
                     </div>
+
+                </article>
+
+                <!-- アチーブメント -->
+                <article class="score-item">
+
+                    <div class="score-item-header">
+
+                        <div>
+
+                            <h3>
+                                アチーブメント
+                            </h3>
+
+                            <p>
+                                {{ achievements }}
+                                / {{ theory_achievement }}
+                                （{{ "%.2f" | format(achievement_rate) }}%）
+                            </p>
+
+                        </div>
+
+                        <strong>
+                            {{ achievement_score }} / 35
+                        </strong>
+
+                    </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ achievement_score / 35 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                    <p class="score-detail">
+                        1752個で基本30点
+                        ／ 1753～1757個は最大＋5点
+                        ／ プロフィール値への加算：+{{ achievements }}
+                    </p>
 
                 </article>
 
@@ -173,19 +189,31 @@
                             </h3>
 
                             <p>
-                                第{{ player.theater_act or 0 }}幕
-                                ／ ★{{ player.theater_stars or 0 }}
+                                第{{ theater_act }}幕
+                                ／ ★{{ theater_stars }}
                             </p>
 
                         </div>
 
-                        
-                            <strong>
-                                +{{ 10 * (player.theater_act or 0) * (player.theater_stars or 0) }}
-                            </strong>
-                        
+                        <strong>
+                            {{ theater_score }} / 24
+                        </strong>
 
                     </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ theater_score / 24 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                    <p class="score-detail">
+                        ★1につき2点
+                        ／ プロフィール値への加算：+{{ theater_value }}
+                    </p>
 
                 </article>
 
@@ -220,20 +248,48 @@
 
                         </div>
 
-                    <strong>
-                        {% if stygian_clear_time %}
-                            + {{ 360 - stygian_clear_time }}
-                        {% else %}
-                            + 0
-                        {% endif %}
-                    </strong>
-                        
+                        <strong>
+                            {{ stygian_score }} / 30
+                        </strong>
 
                     </div>
 
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ stygian_score / 30 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                    {% if stygian_difficulty %}
+
+                        <p class="score-detail">
+                            基本最大25点
+                            ／ 99秒以下からタイムボーナス
+                            ／ 59秒以下で＋5点
+                        </p>
+
+                        <p class="score-detail">
+                            プロフィール値：
+                            タイム加算 +{{ stygian_time_value }}
+                            ／ 幽境ポイント
+                            {{ raw_stygian_point }}
+                            × {{ "%.2f" | format(stygian_multiplier) }}
+                            ＝ +{{ stygian_scaled_point }}
+                        </p>
+
+                        <p class="score-detail">
+                            幽境による合計加算：
+                            +{{ stygian_total_value }}
+                        </p>
+
+                    {% endif %}
+
                 </article>
 
-                <!-- アチーブメント -->
+                <!-- 深境螺旋 -->
                 <article class="score-item">
 
                     <div class="score-item-header">
@@ -241,22 +297,43 @@
                         <div>
 
                             <h3>
-                                アチーブメント
+                                深境螺旋
                             </h3>
 
                             <p>
-                                {{ player.achievements or 0 }}
-                                / {{ theory_achievement }}
-                                （{{ "%.2f" | format(achievement_rate) }}%）
+                                {% if player.abyss_floor and player.abyss_level %}
+
+                                    {{ player.abyss_floor }}-{{ player.abyss_level }}
+                                    ／ ★{{ abyss_stars }}
+
+                                {% else %}
+
+                                    ★{{ abyss_stars }}
+
+                                {% endif %}
                             </p>
 
                         </div>
 
                         <strong>
-                            + {{ player.achievements or 0 }}
+                            {{ abyss_score }} / 15
                         </strong>
 
                     </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ abyss_score / 15 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                    <p class="score-detail">
+                        プロフィール値の螺旋倍率：
+                        ×{{ abyss_multiplier }}
+                    </p>
 
                 </article>
 
@@ -272,16 +349,32 @@
                             </h3>
 
                             <p>
-                                {{ friendship_count }} 人
+                                {{ friendship_count }}
+                                / {{ theory_friendship_count }}人
                             </p>
 
                         </div>
 
                         <strong>
-                            + {{ friendship_count * 10 }}
+                            {{ friendship_score }} / 5
                         </strong>
 
                     </div>
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ friendship_score / 5 * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                    <p class="score-detail">
+                        プロフィール値：
+                        1人につき{{ friendship_multiplier }}
+                        ／ 加算 +{{ friendship_value }}
+                    </p>
 
                 </article>
 
@@ -297,22 +390,145 @@
                             </h3>
 
                             <p>
-                                AR {{ player.level or 0 }}
+                                AR {{ ar }}
                             </p>
 
                         </div>
 
                         <strong>
-                            参考情報
+                            {{ ar_score }} / 1
                         </strong>
 
                     </div>
 
+                    <div class="progress">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ ar_score * 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                    <p class="score-detail">
+                        AR60で1点
+                    </p>
+
                 </article>
 
             </div>
+            </div>
 
-            <!-- ここから下は保存画像に含めません -->
+            <!-- ランキング登録 -->
+            <section
+                class="ranking-register-box"
+                data-html2canvas-ignore="true"
+            >
+
+                {% if ranking_registered %}
+
+                    <div class="ranking-register-success">
+
+                        <h3>
+                            ランキングに登録しました！
+                        </h3>
+
+                        {% if ranking_position %}
+
+                            <p>
+                                現在の順位は
+                                <strong>{{ ranking_position }}位</strong>
+                                です。
+                            </p>
+
+                        {% endif %}
+
+                        <p>
+                            同じUIDで再登録すると、
+                            最新のプロフィール情報へ更新されます。
+                        </p>
+
+                        <a
+                            class="criteria-button"
+                            href="{{ url_for('ranking') }}"
+                        >
+                            ランキングを見る
+                        </a>
+
+                    </div>
+
+                {% else %}
+
+                    <h3>
+                        ランキングに登録しますか？
+                    </h3>
+
+                    <p>
+                        登録すると、ニックネーム・プロフィール画像・
+                        プロフィール値・総合スコア・ランクが公開されます。
+                    </p>
+
+                    {% if ranking_error %}
+
+                        <p class="error-message">
+                            {{ ranking_error }}
+                        </p>
+
+                    {% endif %}
+
+                    {% if profile_value > 0 %}
+
+                        <form
+                            action="{{ url_for('register_ranking') }}"
+                            method="post"
+                            class="ranking-register-form"
+                        >
+
+                            <input
+                                type="hidden"
+                                name="uid"
+                                value="{{ uid }}"
+                            >
+
+                            <button
+                                type="submit"
+                                class="download-button"
+                            >
+                                {% if is_ranking_registered %}
+                                    最新プロフィールで更新する
+                                {% else %}
+                                    はい、登録する
+                                {% endif %}
+                            </button>
+
+                            <a
+                                class="back-button"
+                                href="{{ url_for('home') }}"
+                            >
+                                いいえ、登録しない
+                            </a>
+
+                        </form>
+
+                    {% else %}
+
+                        <p class="criteria-note">
+                            プロフィール値が0のため、
+                            現在はランキングへ登録できません。
+                        </p>
+
+                    {% endif %}
+
+                {% endif %}
+
+            </section>
+
+            <!-- 保存画像には含めない -->
+            <div
+                class="result-actions"
+                data-html2canvas-ignore="true"
+            >
+            <!-- 保存画像には含めない -->
             <div
                 class="result-actions"
                 data-html2canvas-ignore="true"
