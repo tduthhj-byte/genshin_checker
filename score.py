@@ -33,7 +33,7 @@ THEORY_ABYSS_STARS = 36
 STYGIAN_SEASON_COUNT = 10
 
 # プロフィール値での好感度係数
-FRIENDSHIP_MULTIPLIER = 5
+FRIENDSHIP_MULTIPLIER = 10
 
 # 基本点100点＋ボーナス最大10点
 BASE_MAX_SCORE = 100
@@ -109,7 +109,7 @@ def calculate_profile_value(
     [
         アチーブメント
         + 10 × シアター幕数 × 星数
-        + 好感度MAX人数 × 5
+        + 好感度MAX人数 × 10
         + max(360 - 幽境タイム, 0)
         + 幽境ポイント × 開催倍率
     ]
@@ -442,4 +442,3 @@ def rank_name(total) -> str:
         return "C"
     else:
         return "D"
-        
