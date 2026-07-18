@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="{{ texts.html_lang }}">
 
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
     >
 
     <title>
-        プロフィール値ランキング｜原神プロフィール格付け
+        {{ texts.ranking_page_title }}｜{{ texts.site_title }}
     </title>
 
     <link
@@ -25,27 +25,283 @@
 
         <header class="page-header">
 
+            <!-- 言語切り替え -->
+            <div class="language-switcher">
+
+                <a
+                    class="language-button
+                    {% if language == 'ja' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        lang='ja',
+                        server=selected_server
+                    ) }}"
+                >
+                    🇯🇵 日本語
+                </a>
+
+                <a
+                    class="language-button
+                    {% if language == 'en' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        lang='en',
+                        server=selected_server
+                    ) }}"
+                >
+                    🇺🇸 English
+                </a>
+
+                <a
+                    class="language-button
+                    {% if language == 'zh' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        lang='zh',
+                        server=selected_server
+                    ) }}"
+                >
+                    🇨🇳 简体中文
+                </a>
+
+            </div>
+
             <p class="eyebrow">
                 PROFILE VALUE RANKING
             </p>
 
             <h1>
-                プロフィール値ランキング
+                {{ texts.ranking_page_title }}
             </h1>
 
             <p class="description">
-                当サイトで登録された公開プロフィールを、
-                プロフィール値の高い順に表示しています。
+                {{ texts.ranking_description }}
             </p>
 
             <p class="ranking-count">
-                現在の登録人数：
-                <strong>{{ ranking_count }}人</strong>
+                {{ texts.ranking_count_text }}
+
+                <strong>
+                    {{ ranking_count }}{{ texts.people_unit }}
+                </strong>
+            </p>
+
+            <!-- サーバー切り替え -->
+            <div class="server-tabs">
+
+                <a
+                    class="server-tab
+                    {% if selected_server == 'global' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        server='global',
+                        lang=language
+                    ) }}"
+                >
+                    🌍 Global
+                </a>
+
+                <a
+                    class="server-tab
+                    {% if selected_server == 'asia' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        server='asia',
+                        lang=language
+                    ) }}"
+                >
+                    🌏 Asia
+                </a>
+
+                <a
+                    class="server-tab
+                    {% if selected_server == 'america' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        server='america',
+                        lang=language
+                    ) }}"
+                >
+                    🇺🇸 America
+                </a>
+
+                <a
+                    class="server-tab
+                    {% if selected_server == 'europe' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        server='europe',
+                        lang=language
+                    ) }}"
+                >
+                    🇪🇺 Europe
+                </a>
+
+                <a
+                    class="server-tab
+                    {% if selected_server == 'tw' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        server='tw',
+                        lang=language
+                    ) }}"
+                >
+                    🇹🇼 TW / HK / MO
+                </a>
+
+                <a
+                    class="server-tab
+                    {% if selected_server == 'cn' %}active{% endif %}"
+                    href="{{ url_for(
+                        'ranking',
+                        server='cn',
+                        lang=language
+                    ) }}"
+                >
+                    🇨🇳 China
+                </a>
+
+            </div>
+
+            <p class="selected-server-label">
+                {{ texts.ranking_showing }}
+
+                <strong>
+                    {{ selected_server_label }}
+                </strong>
             </p>
 
         </header>
 
         <section class="ranking-card">
+                        {% if current_player and current_position %}
+
+                <section class="current-player-card">
+
+                    <p class="current-player-label">
+
+                        {% if language == "en" %}
+
+                            Your Ranking
+
+                        {% elif language == "zh" %}
+
+                            你的排名
+
+                        {% else %}
+
+                            あなたの順位
+
+                        {% endif %}
+
+                    </p>
+
+                    <div class="current-player-content">
+
+                        <div class="current-player-position">
+
+                            <strong>
+                                {{ current_position }}
+                            </strong>
+
+                            <span>
+
+                                {% if language == "en" %}
+
+                                    th
+
+                                {% elif language == "zh" %}
+
+                                    名
+
+                                {% else %}
+
+                                    位
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+                        <div class="current-player-profile">
+
+                            {% if current_player.icon_url %}
+
+                                <img
+                                    src="{{ current_player.icon_url }}"
+                                    alt="{{ current_player.nickname }}"
+                                    class="ranking-icon"
+                                    crossorigin="anonymous"
+                                >
+
+                            {% else %}
+
+                                <div class="ranking-icon ranking-icon-empty">
+                                    ?
+                                </div>
+
+                            {% endif %}
+
+                            <div>
+
+                                <h2>
+                                    {{ current_player.nickname }}
+                                </h2>
+
+                                <p>
+                                    UID：{{ current_player.uid }}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <div class="current-player-result">
+
+                            <div>
+
+                                <span>
+                                    {{ texts.ranking_profile_value }}
+                                </span>
+
+                                <strong>
+                                    {{ "{:,}".format(current_player.profile_value) }}
+                                </strong>
+
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    {{ texts.ranking_total_score }}
+                                </span>
+
+                                <strong>
+                                    {{ current_player.total_score }}
+                                </strong>
+
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    {{ texts.ranking_rank }}
+                                </span>
+
+                                <strong>
+                                    {{ current_player.rank_name }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            {% endif %}
 
             {% if ranking_entries %}
 
@@ -65,6 +321,7 @@
                             "
                         >
 
+                            <!-- 順位 -->
                             <div class="ranking-position">
 
                                 {% if entry.position == 1 %}
@@ -91,21 +348,32 @@
                                         {{ entry.position }}
                                     </span>
 
-                                    <span class="ranking-unit">
-                                        位
-                                    </span>
+                                    {% if language == "ja" %}
+
+                                        <span class="ranking-unit">
+                                            位
+                                        </span>
+
+                                    {% elif language == "zh" %}
+
+                                        <span class="ranking-unit">
+                                            名
+                                        </span>
+
+                                    {% endif %}
 
                                 {% endif %}
 
                             </div>
 
+                            <!-- プレイヤー情報 -->
                             <div class="ranking-player">
 
                                 {% if entry.icon_url %}
 
                                     <img
                                         src="{{ entry.icon_url }}"
-                                        alt="{{ entry.nickname }}のプロフィール画像"
+                                        alt="{{ entry.nickname }}"
                                         class="ranking-icon"
                                         crossorigin="anonymous"
                                     >
@@ -129,20 +397,34 @@
                                     </p>
 
                                     <p>
-                                        更新：
-                                        {{ entry.updated_at[:10] }}
+                                        {{ texts.ranking_updated }}：
+
+                                        {% if entry.updated_at_text %}
+
+                                            {{ entry.updated_at_text }}
+
+                                        {% elif entry.updated_at %}
+
+                                            {{ entry.updated_at.strftime("%Y-%m-%d") }}
+
+                                        {% else %}
+
+                                            -
+
+                                        {% endif %}
                                     </p>
 
                                 </div>
 
                             </div>
 
+                            <!-- スコア -->
                             <div class="ranking-result">
 
                                 <div class="ranking-profile-value">
 
                                     <span>
-                                        プロフィール値
+                                        {{ texts.ranking_profile_value }}
                                     </span>
 
                                     <strong>
@@ -154,7 +436,7 @@
                                 <div class="ranking-score">
 
                                     <span>
-                                        総合スコア
+                                        {{ texts.ranking_total_score }}
                                     </span>
 
                                     <strong>
@@ -164,11 +446,12 @@
                                 </div>
 
                                 <div
-                                    class="ranking-rank rank-{{ entry.rank_name | lower | replace('+', 'plus') }}"
+                                    class="ranking-rank
+                                    rank-{{ entry.rank_name | lower | replace('+', 'plus') }}"
                                 >
 
                                     <span>
-                                        ランク
+                                        {{ texts.ranking_rank }}
                                     </span>
 
                                     <strong>
@@ -190,12 +473,11 @@
                 <div class="ranking-empty">
 
                     <h2>
-                        まだランキング登録者がいません
+                        {{ texts.ranking_empty_title }}
                     </h2>
 
                     <p>
-                        UIDを採点して、
-                        最初のランキング登録者になってください。
+                        {{ texts.ranking_empty_description }}
                     </p>
 
                 </div>
@@ -206,16 +488,22 @@
 
                 <a
                     class="ranking-action-button primary"
-                    href="{{ url_for('home') }}"
+                    href="{{ url_for(
+                        'home',
+                        lang=language
+                    ) }}"
                 >
-                    🔍 UIDを採点する
+                    🔍 {{ texts.ranking_score_uid }}
                 </a>
 
                 <a
                     class="ranking-action-button secondary"
-                    href="{{ url_for('criteria') }}"
+                    href="{{ url_for(
+                        'criteria',
+                        lang=language
+                    ) }}"
                 >
-                    📖 採点基準を見る
+                    📖 {{ texts.criteria_button }}
                 </a>
 
             </div>

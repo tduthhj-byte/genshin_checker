@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="{{ texts.html_lang }}">
 
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
     >
 
     <title>
-        {{ player.nickname }}｜原神プロフィール格付け
+        {{ player.nickname }}｜{{ texts.site_title }}
     </title>
 
     <link
@@ -35,12 +35,53 @@
 
         <header class="page-header">
 
+            <!-- 言語切り替え -->
+            <div class="language-switcher">
+
+                <a
+                    class="language-button
+                    {% if language == 'ja' %}active{% endif %}"
+                    href="{{ url_for(
+                        'rank',
+                        uid=uid,
+                        lang='ja'
+                    ) }}"
+                >
+                    🇯🇵 日本語
+                </a>
+
+                <a
+                    class="language-button
+                    {% if language == 'en' %}active{% endif %}"
+                    href="{{ url_for(
+                        'rank',
+                        uid=uid,
+                        lang='en'
+                    ) }}"
+                >
+                    🇺🇸 English
+                </a>
+
+                <a
+                    class="language-button
+                    {% if language == 'zh' %}active{% endif %}"
+                    href="{{ url_for(
+                        'rank',
+                        uid=uid,
+                        lang='zh'
+                    ) }}"
+                >
+                    🇨🇳 简体中文
+                </a>
+
+            </div>
+
             <p class="eyebrow">
-                GENSHIN PROFILE RANK
+                {{ texts.eyebrow }}
             </p>
 
             <h1>
-                原神プロフィール格付け
+                {{ texts.site_title }}
             </h1>
 
         </header>
@@ -59,7 +100,7 @@
 
                     <img
                         src="{{ icon_url }}"
-                        alt="{{ player.nickname }}のプロフィール画像"
+                        alt="{{ player.nickname }}"
                         class="profile-icon"
                         crossorigin="anonymous"
                     >
@@ -80,7 +121,7 @@
             <div class="rank-box">
 
                 <p class="rank-label">
-                    総合ランク
+                    {{ texts.result_overall_rank }}
                 </p>
 
                 <div class="rank">
@@ -93,7 +134,7 @@
                 </div>
 
                 <p class="score-detail">
-                    基本100点＋ボーナス最大10点
+                    {{ texts.result_score_summary }}
                 </p>
 
                 <div class="total-progress">
@@ -117,11 +158,11 @@
                         <div>
 
                             <h3>
-                                プロフィール値
+                                {{ texts.result_profile_value }}
                             </h3>
 
                             <p>
-                                理論値：
+                                {{ texts.result_theoretical_value }}：
                                 {{ "{:,}".format(theoretical_profile_value) }}
                             </p>
 
@@ -143,7 +184,7 @@
                         <div>
 
                             <h3>
-                                アチーブメント
+                                {{ texts.result_achievements }}
                             </h3>
 
                             <p>
@@ -170,9 +211,12 @@
                     </div>
 
                     <p class="score-detail">
-                        1752個で基本30点
-                        ／ 1753～1757個は最大＋5点
-                        ／ プロフィール値への加算：+{{ achievements }}
+                        {{ texts.result_achievement_detail_1 }}
+                        ／
+                        {{ texts.result_achievement_detail_2 }}
+                        ／
+                        {{ texts.result_profile_value_addition }}：
+                        +{{ achievements }}
                     </p>
 
                 </article>
@@ -185,11 +229,13 @@
                         <div>
 
                             <h3>
-                                幻想シアター
+                                {{ texts.result_theater }}
                             </h3>
 
                             <p>
-                                第{{ theater_act }}幕
+                                {{ texts.result_act_prefix }}
+                                {{ theater_act }}
+                                {{ texts.result_act_suffix }}
                                 ／ ★{{ theater_stars }}
                             </p>
 
@@ -211,13 +257,14 @@
                     </div>
 
                     <p class="score-detail">
-                        ★1につき2点
-                        ／ プロフィール値への加算：+{{ theater_value }}
+                        {{ texts.result_theater_detail }}
+                        ／
+                        {{ texts.result_profile_value_addition }}：
+                        +{{ theater_value }}
                     </p>
 
                 </article>
-
-                <!-- 幽境の激戦 -->
+                                <!-- 幽境の激戦 -->
                 <article class="score-item">
 
                     <div class="score-item-header">
@@ -225,25 +272,29 @@
                         <div>
 
                             <h3>
-                                幽境の激戦
+                                {{ texts.result_stygian }}
                             </h3>
 
                             <p>
+
                                 {% if stygian_difficulty %}
 
-                                    難易度 {{ stygian_roman }}
+                                    {{ texts.result_difficulty }}
+                                    {{ stygian_roman }}
 
                                     {% if stygian_clear_time %}
 
-                                        ／ {{ stygian_clear_time }}秒
+                                        ／ {{ stygian_clear_time }}
+                                        {{ texts.result_seconds }}
 
                                     {% endif %}
 
                                 {% else %}
 
-                                    未挑戦
+                                    {{ texts.result_not_challenged }}
 
                                 {% endif %}
+
                             </p>
 
                         </div>
@@ -266,30 +317,49 @@
                     {% if stygian_difficulty %}
 
                         <p class="score-detail">
-                            基本最大25点
-                            ／ 99秒以下からタイムボーナス
-                            ／ 59秒以下で＋5点
+
+                            {{ texts.result_stygian_detail }}
+
                         </p>
 
                         <p class="score-detail">
-                            プロフィール値：
-                            タイム加算 +{{ stygian_time_value }}
-                            ／ 幽境ポイント
+
+                            {{ texts.result_profile_value }}：
+
+                            {{ texts.result_time_bonus }}
+                            +{{ stygian_time_value }}
+
+                            ／
+
+                            {{ texts.result_stygian_point }}
+
                             {{ raw_stygian_point }}
-                            × {{ "%.2f" | format(stygian_multiplier) }}
-                            ＝ +{{ stygian_scaled_point }}
+
+                            ×
+
+                            {{ "%.2f"|format(stygian_multiplier) }}
+
+                            =
+
+                            +{{ stygian_scaled_point }}
+
                         </p>
 
                         <p class="score-detail">
-                            幽境による合計加算：
+
+                            {{ texts.result_total_addition }}
+
                             +{{ stygian_total_value }}
+
                         </p>
 
                     {% endif %}
 
                 </article>
 
+
                 <!-- 深境螺旋 -->
+
                 <article class="score-item">
 
                     <div class="score-item-header">
@@ -297,13 +367,17 @@
                         <div>
 
                             <h3>
-                                深境螺旋
+
+                                {{ texts.result_abyss }}
+
                             </h3>
 
                             <p>
+
                                 {% if player.abyss_floor and player.abyss_level %}
 
                                     {{ player.abyss_floor }}-{{ player.abyss_level }}
+
                                     ／ ★{{ abyss_stars }}
 
                                 {% else %}
@@ -311,12 +385,15 @@
                                     ★{{ abyss_stars }}
 
                                 {% endif %}
+
                             </p>
 
                         </div>
 
                         <strong>
+
                             {{ abyss_score }} / 15
+
                         </strong>
 
                     </div>
@@ -331,13 +408,18 @@
                     </div>
 
                     <p class="score-detail">
-                        プロフィール値の螺旋倍率：
+
+                        {{ texts.result_abyss_multiplier }}
+
                         ×{{ abyss_multiplier }}
+
                     </p>
 
                 </article>
 
-                <!-- 好感度MAXキャラ -->
+
+                <!-- 好感度 -->
+
                 <article class="score-item">
 
                     <div class="score-item-header">
@@ -345,18 +427,25 @@
                         <div>
 
                             <h3>
-                                好感度MAXキャラ
+
+                                {{ texts.result_friendship }}
+
                             </h3>
 
                             <p>
+
                                 {{ friendship_count }}
-                                / {{ theory_friendship_count }}人
+
+                                / {{ theory_friendship_count }}
+
                             </p>
 
                         </div>
 
                         <strong>
+
                             {{ friendship_score }} / 5
+
                         </strong>
 
                     </div>
@@ -371,14 +460,26 @@
                     </div>
 
                     <p class="score-detail">
-                        プロフィール値：
-                        1人につき{{ friendship_multiplier }}
-                        ／ 加算 +{{ friendship_value }}
+
+                        {{ texts.result_profile_value }}
+
+                        ：1
+
+                        {{ texts.result_character }}
+
+                        {{ friendship_multiplier }}
+
+                        ／
+
+                        +{{ friendship_value }}
+
                     </p>
 
                 </article>
 
+
                 <!-- 冒険ランク -->
+
                 <article class="score-item">
 
                     <div class="score-item-header">
@@ -386,17 +487,23 @@
                         <div>
 
                             <h3>
-                                冒険ランク
+
+                                {{ texts.result_ar }}
+
                             </h3>
 
                             <p>
+
                                 AR {{ ar }}
+
                             </p>
 
                         </div>
 
                         <strong>
+
                             {{ ar_score }} / 1
+
                         </strong>
 
                     </div>
@@ -411,15 +518,15 @@
                     </div>
 
                     <p class="score-detail">
-                        AR60で1点
+
+                        {{ texts.result_ar_detail }}
+
                     </p>
 
                 </article>
 
             </div>
-            </div>
-
-            <!-- ランキング登録 -->
+                        <!-- ランキング登録 -->
             <section
                 class="ranking-register-box"
                 data-html2canvas-ignore="true"
@@ -430,29 +537,31 @@
                     <div class="ranking-register-success">
 
                         <h3>
-                            ランキングに登録しました！
+                            {{ texts.result_registered }}
                         </h3>
 
                         {% if ranking_position %}
 
                             <p>
-                                現在の順位は
-                                <strong>{{ ranking_position }}位</strong>
-                                です。
+                                {{ texts.result_current_rank }}
+
+                                <strong>
+                                    {{ ranking_position }}
+                                </strong>
+
                             </p>
 
                         {% endif %}
 
                         <p>
-                            同じUIDで再登録すると、
-                            最新のプロフィール情報へ更新されます。
+                            {{ texts.result_update_notice }}
                         </p>
 
                         <a
                             class="criteria-button"
-                            href="{{ url_for('ranking') }}"
+                            href="{{ url_for('ranking', lang=language) }}"
                         >
-                            ランキングを見る
+                            {{ texts.ranking_button }}
                         </a>
 
                     </div>
@@ -460,12 +569,11 @@
                 {% else %}
 
                     <h3>
-                        ランキングに登録しますか？
+                        {{ texts.result_register_question }}
                     </h3>
 
                     <p>
-                        登録すると、ニックネーム・プロフィール画像・
-                        プロフィール値・総合スコア・ランクが公開されます。
+                        {{ texts.result_register_description }}
                     </p>
 
                     {% if ranking_error %}
@@ -490,22 +598,34 @@
                                 value="{{ uid }}"
                             >
 
+                            <input
+                                type="hidden"
+                                name="lang"
+                                value="{{ language }}"
+                            >
+
                             <button
                                 type="submit"
                                 class="download-button"
                             >
+
                                 {% if is_ranking_registered %}
-                                    最新プロフィールで更新する
+
+                                    {{ texts.result_update }}
+
                                 {% else %}
-                                    はい、登録する
+
+                                    {{ texts.result_register }}
+
                                 {% endif %}
+
                             </button>
 
                             <a
                                 class="back-button"
-                                href="{{ url_for('home') }}"
+                                href="{{ url_for('home', lang=language) }}"
                             >
-                                いいえ、登録しない
+                                {{ texts.result_cancel }}
                             </a>
 
                         </form>
@@ -513,8 +633,9 @@
                     {% else %}
 
                         <p class="criteria-note">
-                            プロフィール値が0のため、
-                            現在はランキングへ登録できません。
+
+                            {{ texts.result_profile_zero }}
+
                         </p>
 
                     {% endif %}
@@ -528,32 +649,27 @@
                 class="result-actions"
                 data-html2canvas-ignore="true"
             >
-            <!-- 保存画像には含めない -->
-            <div
-                class="result-actions"
-                data-html2canvas-ignore="true"
-            >
 
                 <button
                     id="download-image-button"
                     type="button"
                     class="download-button"
                 >
-                    結果画像を保存
+                    {{ texts.result_save_image }}
                 </button>
 
                 <a
                     class="criteria-button"
-                    href="{{ url_for('criteria') }}"
+                    href="{{ url_for('criteria', lang=language) }}"
                 >
-                    採点基準を見る
+                    {{ texts.criteria_button }}
                 </a>
 
                 <a
                     class="back-button"
-                    href="{{ url_for('home') }}"
+                    href="{{ url_for('home', lang=language) }}"
                 >
-                    別のUIDを採点する
+                    {{ texts.result_another_uid }}
                 </a>
 
                 <p

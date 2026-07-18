@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="{{ texts.html_lang }}">
 
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,9 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>採点基準｜原神プロフィール格付け</title>
+    <title>
+        {{ texts.criteria_page_title }}｜{{ texts.site_title }}
+    </title>
 
     <link
         rel="stylesheet"
@@ -19,795 +21,536 @@
 
 <body>
 
+    {% macro tr(ja, en, zh) -%}
+        {%- if language == "en" -%}
+            {{ en }}
+        {%- elif language == "zh" -%}
+            {{ zh }}
+        {%- else -%}
+            {{ ja }}
+        {%- endif -%}
+    {%- endmacro %}
+
     <main class="container">
 
         <header class="page-header">
+
+            <!-- 言語切り替え -->
+            <div class="language-switcher">
+
+                <a
+                    class="language-button {% if language == 'ja' %}active{% endif %}"
+                    href="{{ url_for('criteria', lang='ja') }}"
+                >
+                    🇯🇵 日本語
+                </a>
+
+                <a
+                    class="language-button {% if language == 'en' %}active{% endif %}"
+                    href="{{ url_for('criteria', lang='en') }}"
+                >
+                    🇺🇸 English
+                </a>
+
+                <a
+                    class="language-button {% if language == 'zh' %}active{% endif %}"
+                    href="{{ url_for('criteria', lang='zh') }}"
+                >
+                    🇨🇳 简体中文
+                </a>
+
+            </div>
 
             <p class="eyebrow">
                 SCORING CRITERIA
             </p>
 
             <h1>
-                原神プロフィール格付け基準
+                {{ tr(
+                    "原神プロフィール格付け基準",
+                    "Genshin Profile Scoring Criteria",
+                    "原神个人资料评分标准"
+                ) }}
             </h1>
 
             <p class="description">
-                Enka.Networkから取得した公開プロフィールをもとに、
-                総合スコアとランキング用プロフィール値を算出します。
+                {{ tr(
+                    "Enka.Networkから取得した公開プロフィールをもとに、総合スコアとランキング用プロフィール値を算出します。",
+                    "The total score and ranking profile value are calculated from public profile data retrieved through Enka.Network.",
+                    "系统将根据通过Enka.Network获取的公开个人资料，计算综合分数及排行榜用个人资料值。"
+                ) }}
             </p>
 
         </header>
 
         <section class="criteria-card">
 
-            <!-- =========================
-                 総合スコア
-            ========================== -->
+            <!-- 総合スコア -->
             <section class="criteria-section">
 
                 <h2>
-                    総合スコア
+                    {{ tr("総合スコア", "Total Score", "综合分数") }}
                 </h2>
 
                 <p class="criteria-note">
-                    通常の基本配点は100点です。
-                    アチーブメントと幽境のボーナスを含めると、
-                    最高110点まで獲得できます。
+                    {{ tr(
+                        "通常の基本配点は100点です。アチーブメントと幽境のボーナスを含めると、最高110点まで獲得できます。",
+                        "The normal base score is 100 points. Including Achievement and Stygian bonuses, the maximum possible score is 110.",
+                        "基础满分为100分。计入成就与幽境奖励后，最高可获得110分。"
+                    ) }}
                 </p>
 
                 <table class="criteria-table">
 
                     <tr>
-                        <th>アチーブメント</th>
-                        <td>30点＋最大5点</td>
+                        <th>{{ tr("アチーブメント", "Achievements", "成就") }}</th>
+                        <td>{{ tr("30点＋最大5点", "30 points + up to 5 bonus", "30分＋最高5分奖励") }}</td>
                     </tr>
 
                     <tr>
-                        <th>幻想シアター</th>
-                        <td>24点</td>
+                        <th>{{ tr("幻想シアター", "Imaginarium Theater", "幻想真境剧诗") }}</th>
+                        <td>{{ tr("24点", "24 points", "24分") }}</td>
                     </tr>
 
                     <tr>
-                        <th>幽境の激戦</th>
-                        <td>25点＋最大5点</td>
+                        <th>{{ tr("幽境の激戦", "Stygian Onslaught", "幽境危战") }}</th>
+                        <td>{{ tr("25点＋最大5点", "25 points + up to 5 bonus", "25分＋最高5分奖励") }}</td>
                     </tr>
 
                     <tr>
-                        <th>深境螺旋</th>
-                        <td>15点</td>
+                        <th>{{ tr("深境螺旋", "Spiral Abyss", "深境螺旋") }}</th>
+                        <td>{{ tr("15点", "15 points", "15分") }}</td>
                     </tr>
 
                     <tr>
-                        <th>好感度MAXキャラ</th>
-                        <td>5点</td>
+                        <th>{{ tr("好感度MAXキャラ", "Max Friendship Characters", "满好感角色") }}</th>
+                        <td>{{ tr("5点", "5 points", "5分") }}</td>
                     </tr>
 
                     <tr>
-                        <th>冒険ランク</th>
-                        <td>1点</td>
+                        <th>{{ tr("冒険ランク", "Adventure Rank", "冒险等阶") }}</th>
+                        <td>{{ tr("1点", "1 point", "1分") }}</td>
                     </tr>
 
                     <tr>
-                        <th>基本満点</th>
-                        <td>
-                            <strong>100点</strong>
-                        </td>
+                        <th>{{ tr("基本満点", "Base Maximum", "基础满分") }}</th>
+                        <td><strong>{{ tr("100点", "100 points", "100分") }}</strong></td>
                     </tr>
 
                     <tr>
-                        <th>ボーナス込み最高点</th>
-                        <td>
-                            <strong>{{ max_total_score }}点</strong>
-                        </td>
-                    </tr>
-
-                </table>
-
-            </section>
-
-            <!-- =========================
-                 アチーブメント
-            ========================== -->
-            <section class="criteria-section">
-
-                <h2>
-                    ① アチーブメント
-                </h2>
-
-                <p class="criteria-note">
-                    1,752個を通常満点の30点とし、
-                    それ未満は達成率によって段階評価します。
-                    1,753個以降は、理論値1,757個まで1個につき1点を加算します。
-                </p>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>100%以上</th>
-                        <td>30点</td>
-                    </tr>
-
-                    <tr>
-                        <th>99%以上</th>
-                        <td>29点</td>
-                    </tr>
-
-                    <tr>
-                        <th>98%以上</th>
-                        <td>28点</td>
-                    </tr>
-
-                    <tr>
-                        <th>97%以上</th>
-                        <td>27点</td>
-                    </tr>
-
-                    <tr>
-                        <th>96%以上</th>
-                        <td>26点</td>
-                    </tr>
-
-                    <tr>
-                        <th>95%以上</th>
-                        <td>25点</td>
-                    </tr>
-
-                    <tr>
-                        <th>90%以上</th>
-                        <td>23点</td>
-                    </tr>
-
-                    <tr>
-                        <th>85%以上</th>
-                        <td>20点</td>
-                    </tr>
-
-                    <tr>
-                        <th>80%以上</th>
-                        <td>17点</td>
-                    </tr>
-
-                    <tr>
-                        <th>70%以上</th>
-                        <td>13点</td>
-                    </tr>
-
-                    <tr>
-                        <th>60%以上</th>
-                        <td>9点</td>
-                    </tr>
-
-                    <tr>
-                        <th>50%以上</th>
-                        <td>6点</td>
-                    </tr>
-
-                    <tr>
-                        <th>40%以上</th>
-                        <td>3点</td>
-                    </tr>
-
-                    <tr>
-                        <th>30%以上</th>
-                        <td>2点</td>
-                    </tr>
-
-                    <tr>
-                        <th>20%以上</th>
-                        <td>1点</td>
-                    </tr>
-
-                    <tr>
-                        <th>20%未満</th>
-                        <td>0点</td>
-                    </tr>
-
-                </table>
-
-                <h3 class="criteria-subtitle">
-                    理論値ボーナス
-                </h3>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>1,752個</th>
-                        <td>30点</td>
-                    </tr>
-
-                    <tr>
-                        <th>1,753個</th>
-                        <td>31点</td>
-                    </tr>
-
-                    <tr>
-                        <th>1,754個</th>
-                        <td>32点</td>
-                    </tr>
-
-                    <tr>
-                        <th>1,755個</th>
-                        <td>33点</td>
-                    </tr>
-
-                    <tr>
-                        <th>1,756個</th>
-                        <td>34点</td>
-                    </tr>
-
-                    <tr>
-                        <th>1,757個</th>
-                        <td>
-                            <strong>35点</strong>
-                        </td>
-                    </tr>
-
-                </table>
-
-                <p class="criteria-note">
-                    プロフィール値では、取得済みアチーブメント数をそのまま加算します。
-                </p>
-
-            </section>
-
-            <!-- =========================
-                 幻想シアター
-            ========================== -->
-            <section class="criteria-section">
-
-                <h2>
-                    ② 幻想シアター
-                </h2>
-
-                <p class="criteria-note">
-                    獲得した星1つにつき2点として評価します。
-                </p>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>計算方法</th>
-                        <td>
-                            <code>星数 × 2</code>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th>★12</th>
-                        <td>
-                            <strong>24点</strong>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th>★11</th>
-                        <td>22点</td>
-                    </tr>
-
-                    <tr>
-                        <th>★10</th>
-                        <td>20点</td>
-                    </tr>
-
-                    <tr>
-                        <th>未挑戦</th>
-                        <td>0点</td>
-                    </tr>
-
-                </table>
-
-                <p class="criteria-note">
-                    プロフィール値では、
-                    10 × 挑戦幕数 × 星数として加算します。
-                </p>
-
-            </section>
-
-            <!-- =========================
-                 幽境
-            ========================== -->
-            <section class="criteria-section">
-
-                <h2>
-                    ③ 幽境の激戦
-                </h2>
-
-                <h3 class="criteria-subtitle">
-                    基本点
-                </h3>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>VI・180秒以内</th>
-                        <td>
-                            <strong>25点</strong>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th>VI・181秒以上</th>
-                        <td>20点</td>
-                    </tr>
-
-                    <tr>
-                        <th>V</th>
-                        <td>15点</td>
-                    </tr>
-
-                    <tr>
-                        <th>IV</th>
-                        <td>10点</td>
-                    </tr>
-
-                    <tr>
-                        <th>III</th>
-                        <td>5点</td>
-                    </tr>
-
-                    <tr>
-                        <th>III未満・未挑戦</th>
-                        <td>0点</td>
-                    </tr>
-
-                </table>
-
-                <h3 class="criteria-subtitle">
-                    タイムボーナス
-                </h3>
-
-                <p class="criteria-note">
-                    難易度VIを180秒以内でクリアした場合のみ対象です。
-                </p>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>90～99秒</th>
-                        <td>＋1点</td>
-                    </tr>
-
-                    <tr>
-                        <th>80～89秒</th>
-                        <td>＋2点</td>
-                    </tr>
-
-                    <tr>
-                        <th>70～79秒</th>
-                        <td>＋3点</td>
-                    </tr>
-
-                    <tr>
-                        <th>60～69秒</th>
-                        <td>＋4点</td>
-                    </tr>
-
-                    <tr>
-                        <th>1～59秒</th>
-                        <td>
-                            <strong>＋5点</strong>
-                        </td>
-                    </tr>
-
-                </table>
-
-                <p class="criteria-note">
-                    幽境の最高点は30点です。
-                </p>
-
-            </section>
-
-            <!-- =========================
-                 深境螺旋
-            ========================== -->
-            <section class="criteria-section">
-
-                <h2>
-                    ④ 深境螺旋
-                </h2>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>36★</th>
-                        <td>
-                            <strong>15点</strong>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th>33～35★</th>
-                        <td>13点</td>
-                    </tr>
-
-                    <tr>
-                        <th>30～32★</th>
-                        <td>10点</td>
-                    </tr>
-
-                    <tr>
-                        <th>27～29★</th>
-                        <td>7点</td>
-                    </tr>
-
-                    <tr>
-                        <th>18～26★</th>
-                        <td>3点</td>
-                    </tr>
-
-                    <tr>
-                        <th>17★以下・未挑戦</th>
-                        <td>0点</td>
-                    </tr>
-
-                </table>
-
-                <p class="criteria-note">
-                    プロフィール値では、
-                    max（深境螺旋の星数 − 35, 0）を倍率として使用します。
-                    36★なら×1、35★以下なら×0です。
-                </p>
-
-            </section>
-
-            <!-- =========================
-                 好感度
-            ========================== -->
-            <section class="criteria-section">
-
-                <h2>
-                    ⑤ 好感度MAXキャラ
-                </h2>
-
-                <p class="criteria-note">
-                    現在の最大116人を基準に、5点満点で比例配点します。
-                </p>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>計算式</th>
-                        <td>
-                            <code>
-                                好感度MAX人数 ÷ 116 × 5
-                            </code>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th>116人</th>
-                        <td>
-                            <strong>5点</strong>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th>点数処理</th>
-                        <td>
-                            四捨五入・最大5点
-                        </td>
-                    </tr>
-
-                </table>
-
-                <p class="criteria-note">
-                    プロフィール値では、
-                    好感度MAX人数 × {{ friendship_multiplier }}として加算します。
-                </p>
-
-            </section>
-
-            <!-- =========================
-                 AR
-            ========================== -->
-            <section class="criteria-section">
-
-                <h2>
-                    ⑥ 冒険ランク
-                </h2>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>AR60</th>
-                        <td>
-                            <strong>1点</strong>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th>AR59以下</th>
-                        <td>0点</td>
-                    </tr>
-
-                </table>
-
-                <p class="criteria-note">
-                    冒険ランクはプロフィール値には加算しません。
-                </p>
-
-            </section>
-
-            <!-- =========================
-                 プロフィール値
-            ========================== -->
-            <section class="criteria-section">
-
-                <h2>
-                    ランキング用プロフィール値
-                </h2>
-
-                <p class="criteria-note">
-                    総合スコアとは別に、
-                    各実績を細かく数値化したランキング用指標です。
-                </p>
-
-                <div class="formula-card">
-
-                    <p class="formula-title">
-                        プロフィール値
-                    </p>
-
-                    <div class="formula-content">
-
-                        <span>［</span>
-
-                        <span>
-                            アチーブメント数
-                        </span>
-
-                        <span>
-                            ＋ 10 × 幻想シアター挑戦幕数 × 星数
-                        </span>
-
-                        <span>
-                            ＋ 好感度MAXキャラ数 × {{ friendship_multiplier }}
-                        </span>
-
-                        <span>
-                            ＋ max（360 − 幽境クリアタイム, 0）
-                        </span>
-
-                        <span>
-                            ＋ 幽境ポイント × 幽境開催倍率
-                        </span>
-
-                        <span>］</span>
-
-                        <span>
-                            × max（深境螺旋の星数 − 35, 0）
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-            <!-- =========================
-                 幽境プロフィール値
-            ========================== -->
-            <section class="criteria-section">
-
-                <h2>
-                    プロフィール値用の幽境ポイント
-                </h2>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>VI・180秒以内</th>
-                        <td>1,800</td>
-                    </tr>
-
-                    <tr>
-                        <th>VI・181秒以上</th>
-                        <td>1,600</td>
-                    </tr>
-
-                    <tr>
-                        <th>V</th>
-                        <td>1,200</td>
-                    </tr>
-
-                    <tr>
-                        <th>IV</th>
-                        <td>800</td>
-                    </tr>
-
-                    <tr>
-                        <th>III</th>
-                        <td>400</td>
-                    </tr>
-
-                    <tr>
-                        <th>III未満・未挑戦</th>
-                        <td>0</td>
-                    </tr>
-
-                </table>
-
-                <h3 class="criteria-subtitle">
-                    幽境開催倍率
-                </h3>
-
-                <table class="criteria-table">
-
-                    <tr>
-                        <th>現在の倍率</th>
+                        <th>{{ tr("ボーナス込み最高点", "Maximum Including Bonuses", "含奖励最高分") }}</th>
                         <td>
                             <strong>
-                                ×{{ "%.2f" | format(stygian_multiplier) }}
+                                {{ max_total_score }}{{ tr("点", " points", "分") }}
                             </strong>
                         </td>
                     </tr>
 
-                    <tr>
-                        <th>計算式</th>
-                        <td>
-                            <code>
-                                1 ＋ 開催期数 ÷ 100
-                            </code>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th>適用対象</th>
-                        <td>
-                            幽境ポイントのみ
-                        </td>
-                    </tr>
-
                 </table>
 
             </section>
 
-            <!-- =========================
-                 理論プロフィール値
-            ========================== -->
+            <!-- アチーブメント -->
             <section class="criteria-section">
 
                 <h2>
-                    理論プロフィール値
+                    ① {{ tr("アチーブメント", "Achievements", "成就") }}
+                </h2>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "1,752個を通常満点の30点とし、それ未満は達成率によって段階評価します。1,753個以降は、理論値1,757個まで1個につき1点を加算します。",
+                        "1,752 achievements earn the normal maximum of 30 points. Lower totals are scored in tiers based on completion rate. From 1,753 to the theoretical maximum of 1,757, each additional achievement adds 1 point.",
+                        "1,752个成就为基础满分30分，低于此数值时按完成率分档计分。自1,753个起至理论上限1,757个，每增加1个成就追加1分。"
+                    ) }}
+                </p>
+
+                <table class="criteria-table">
+                    <tr><th>100%+</th><td>{{ tr("30点", "30 points", "30分") }}</td></tr>
+                    <tr><th>99%+</th><td>{{ tr("29点", "29 points", "29分") }}</td></tr>
+                    <tr><th>98%+</th><td>{{ tr("28点", "28 points", "28分") }}</td></tr>
+                    <tr><th>97%+</th><td>{{ tr("27点", "27 points", "27分") }}</td></tr>
+                    <tr><th>96%+</th><td>{{ tr("26点", "26 points", "26分") }}</td></tr>
+                    <tr><th>95%+</th><td>{{ tr("25点", "25 points", "25分") }}</td></tr>
+                    <tr><th>90%+</th><td>{{ tr("23点", "23 points", "23分") }}</td></tr>
+                    <tr><th>85%+</th><td>{{ tr("20点", "20 points", "20分") }}</td></tr>
+                    <tr><th>80%+</th><td>{{ tr("17点", "17 points", "17分") }}</td></tr>
+                    <tr><th>70%+</th><td>{{ tr("13点", "13 points", "13分") }}</td></tr>
+                    <tr><th>60%+</th><td>{{ tr("9点", "9 points", "9分") }}</td></tr>
+                    <tr><th>50%+</th><td>{{ tr("6点", "6 points", "6分") }}</td></tr>
+                    <tr><th>40%+</th><td>{{ tr("3点", "3 points", "3分") }}</td></tr>
+                    <tr><th>30%+</th><td>{{ tr("2点", "2 points", "2分") }}</td></tr>
+                    <tr><th>20%+</th><td>{{ tr("1点", "1 point", "1分") }}</td></tr>
+                    <tr>
+                        <th>{{ tr("20%未満", "Below 20%", "低于20%") }}</th>
+                        <td>{{ tr("0点", "0 points", "0分") }}</td>
+                    </tr>
+                </table>
+
+                <h3 class="criteria-subtitle">
+                    {{ tr("理論値ボーナス", "Theoretical-Maximum Bonus", "理论值奖励") }}
+                </h3>
+
+                <table class="criteria-table">
+                    <tr><th>1,752</th><td>{{ tr("30点", "30 points", "30分") }}</td></tr>
+                    <tr><th>1,753</th><td>{{ tr("31点", "31 points", "31分") }}</td></tr>
+                    <tr><th>1,754</th><td>{{ tr("32点", "32 points", "32分") }}</td></tr>
+                    <tr><th>1,755</th><td>{{ tr("33点", "33 points", "33分") }}</td></tr>
+                    <tr><th>1,756</th><td>{{ tr("34点", "34 points", "34分") }}</td></tr>
+                    <tr><th>1,757</th><td><strong>{{ tr("35点", "35 points", "35分") }}</strong></td></tr>
+                </table>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "プロフィール値では、取得済みアチーブメント数をそのまま加算します。",
+                        "For profile value, the total number of achievements earned is added directly.",
+                        "在个人资料值中，已获得的成就数量将直接计入。"
+                    ) }}
+                </p>
+
+            </section>
+
+            <!-- 幻想シアター -->
+            <section class="criteria-section">
+
+                <h2>
+                    ② {{ tr("幻想シアター", "Imaginarium Theater", "幻想真境剧诗") }}
+                </h2>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "獲得した星1つにつき2点として評価します。",
+                        "Each earned star is worth 2 points.",
+                        "每获得1颗星计2分。"
+                    ) }}
+                </p>
+
+                <table class="criteria-table">
+                    <tr>
+                        <th>{{ tr("計算方法", "Formula", "计算方式") }}</th>
+                        <td><code>{{ tr("星数 × 2", "Stars × 2", "星数 × 2") }}</code></td>
+                    </tr>
+                    <tr><th>★12</th><td><strong>{{ tr("24点", "24 points", "24分") }}</strong></td></tr>
+                    <tr><th>★11</th><td>{{ tr("22点", "22 points", "22分") }}</td></tr>
+                    <tr><th>★10</th><td>{{ tr("20点", "20 points", "20分") }}</td></tr>
+                    <tr>
+                        <th>{{ tr("未挑戦", "Not attempted", "未挑战") }}</th>
+                        <td>{{ tr("0点", "0 points", "0分") }}</td>
+                    </tr>
+                </table>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "プロフィール値では、10 × 挑戦幕数 × 星数として加算します。",
+                        "For profile value, the addition is calculated as 10 × acts completed × stars.",
+                        "在个人资料值中，按10 × 挑战幕数 × 星数计入。"
+                    ) }}
+                </p>
+
+            </section>
+
+            <!-- 幽境 -->
+            <section class="criteria-section">
+
+                <h2>
+                    ③ {{ tr("幽境の激戦", "Stygian Onslaught", "幽境危战") }}
+                </h2>
+
+                <h3 class="criteria-subtitle">
+                    {{ tr("基本点", "Base Score", "基础分") }}
+                </h3>
+
+                <table class="criteria-table">
+                    <tr><th>VI・≤180s</th><td><strong>{{ tr("25点", "25 points", "25分") }}</strong></td></tr>
+                    <tr><th>VI・≥181s</th><td>{{ tr("20点", "20 points", "20分") }}</td></tr>
+                    <tr><th>V</th><td>{{ tr("15点", "15 points", "15分") }}</td></tr>
+                    <tr><th>IV</th><td>{{ tr("10点", "10 points", "10分") }}</td></tr>
+                    <tr><th>III</th><td>{{ tr("5点", "5 points", "5分") }}</td></tr>
+                    <tr>
+                        <th>{{ tr("III未満・未挑戦", "Below III / Not attempted", "低于III／未挑战") }}</th>
+                        <td>{{ tr("0点", "0 points", "0分") }}</td>
+                    </tr>
+                </table>
+
+                <h3 class="criteria-subtitle">
+                    {{ tr("タイムボーナス", "Time Bonus", "时间奖励") }}
+                </h3>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "難易度VIを180秒以内でクリアした場合のみ対象です。",
+                        "The time bonus applies only when Difficulty VI is cleared within 180 seconds.",
+                        "仅在难度VI于180秒内通关时适用。"
+                    ) }}
+                </p>
+
+                <table class="criteria-table">
+                    <tr><th>90–99s</th><td>+1</td></tr>
+                    <tr><th>80–89s</th><td>+2</td></tr>
+                    <tr><th>70–79s</th><td>+3</td></tr>
+                    <tr><th>60–69s</th><td>+4</td></tr>
+                    <tr><th>1–59s</th><td><strong>+5</strong></td></tr>
+                </table>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "幽境の最高点は30点です。",
+                        "The maximum Stygian score is 30 points.",
+                        "幽境项目最高为30分。"
+                    ) }}
+                </p>
+
+            </section>
+
+            <!-- 深境螺旋 -->
+            <section class="criteria-section">
+
+                <h2>
+                    ④ {{ tr("深境螺旋", "Spiral Abyss", "深境螺旋") }}
                 </h2>
 
                 <table class="criteria-table">
-
+                    <tr><th>36★</th><td><strong>{{ tr("15点", "15 points", "15分") }}</strong></td></tr>
+                    <tr><th>33–35★</th><td>{{ tr("13点", "13 points", "13分") }}</td></tr>
+                    <tr><th>30–32★</th><td>{{ tr("10点", "10 points", "10分") }}</td></tr>
+                    <tr><th>27–29★</th><td>{{ tr("7点", "7 points", "7分") }}</td></tr>
+                    <tr><th>18–26★</th><td>{{ tr("3点", "3 points", "3分") }}</td></tr>
                     <tr>
-                        <th>アチーブメント</th>
-                        <td>{{ theory_achievement }}</td>
+                        <th>{{ tr("17★以下・未挑戦", "17★ or fewer / Not attempted", "17★以下／未挑战") }}</th>
+                        <td>{{ tr("0点", "0 points", "0分") }}</td>
                     </tr>
-
-                    <tr>
-                        <th>幻想シアター</th>
-                        <td>第10幕・★12</td>
-                    </tr>
-
-                    <tr>
-                        <th>好感度MAX</th>
-                        <td>{{ theory_friendship_count }}人</td>
-                    </tr>
-
-                    <tr>
-                        <th>幽境タイム</th>
-                        <td>54秒</td>
-                    </tr>
-
-                    <tr>
-                        <th>幽境ポイント</th>
-                        <td>1,800</td>
-                    </tr>
-
-                    <tr>
-                        <th>深境螺旋</th>
-                        <td>36★</td>
-                    </tr>
-
                 </table>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "プロフィール値では、max（深境螺旋の星数 − 35, 0）を倍率として使用します。36★なら×1、35★以下なら×0です。",
+                        "For profile value, max(Spiral Abyss stars − 35, 0) is used as the multiplier. 36★ gives ×1, while 35★ or fewer gives ×0.",
+                        "在个人资料值中，使用max（深境螺旋星数 − 35, 0）作为倍率。36★为×1，35★及以下为×0。"
+                    ) }}
+                </p>
+
+            </section>
+
+            <!-- 好感度 -->
+            <section class="criteria-section">
+
+                <h2>
+                    ⑤ {{ tr("好感度MAXキャラ", "Max Friendship Characters", "满好感角色") }}
+                </h2>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "現在の最大116人を基準に、5点満点で比例配点します。",
+                        "The score is proportional, using the current maximum of 116 characters as the 5-point benchmark.",
+                        "以当前最多116名角色为基准，按比例计算，满分5分。"
+                    ) }}
+                </p>
+
+                <table class="criteria-table">
+                    <tr>
+                        <th>{{ tr("計算式", "Formula", "计算公式") }}</th>
+                        <td><code>{{ tr("好感度MAX人数 ÷ 116 × 5", "Max-friendship count ÷ 116 × 5", "满好感人数 ÷ 116 × 5") }}</code></td>
+                    </tr>
+                    <tr><th>116</th><td><strong>{{ tr("5点", "5 points", "5分") }}</strong></td></tr>
+                    <tr>
+                        <th>{{ tr("点数処理", "Rounding", "分数处理") }}</th>
+                        <td>{{ tr("四捨五入・最大5点", "Rounded to nearest integer, maximum 5", "四舍五入，最高5分") }}</td>
+                    </tr>
+                </table>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "プロフィール値では、好感度MAX人数 × 係数として加算します。",
+                        "For profile value, max-friendship count × multiplier is added.",
+                        "在个人资料值中，按满好感人数 × 系数计入。"
+                    ) }}
+                    （×{{ friendship_multiplier }}）
+                </p>
+
+            </section>
+
+            <!-- AR -->
+            <section class="criteria-section">
+
+                <h2>
+                    ⑥ {{ tr("冒険ランク", "Adventure Rank", "冒险等阶") }}
+                </h2>
+
+                <table class="criteria-table">
+                    <tr><th>AR60</th><td><strong>{{ tr("1点", "1 point", "1分") }}</strong></td></tr>
+                    <tr><th>AR59↓</th><td>{{ tr("0点", "0 points", "0分") }}</td></tr>
+                </table>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "冒険ランクはプロフィール値には加算しません。",
+                        "Adventure Rank is not added to profile value.",
+                        "冒险等阶不计入个人资料值。"
+                    ) }}
+                </p>
+
+            </section>
+
+            <!-- プロフィール値 -->
+            <section class="criteria-section">
+
+                <h2>
+                    {{ tr("ランキング用プロフィール値", "Ranking Profile Value", "排行榜用个人资料值") }}
+                </h2>
+
+                <p class="criteria-note">
+                    {{ tr(
+                        "総合スコアとは別に、各実績を細かく数値化したランキング用指標です。",
+                        "This is a separate ranking metric that quantifies each accomplishment in greater detail than the total score.",
+                        "这是独立于综合分数的排行榜指标，会更细致地量化各项成果。"
+                    ) }}
+                </p>
 
                 <div class="formula-card">
 
                     <p class="formula-title">
-                        現在の理論プロフィール値
+                        {{ tr("プロフィール値", "Profile Value", "个人资料值") }}
                     </p>
 
-                    <div class="formula-result">
-
-                        <strong>
-                            {{ "{:,}".format(theoretical_profile_value) }}
-                        </strong>
-
+                    <div class="formula-content">
+                        <span>[</span>
+                        <span>{{ tr("アチーブメント数", "Achievement count", "成就数量") }}</span>
+                        <span>+ 10 × {{ tr("幻想シアター挑戦幕数", "Theater acts", "幻想真境剧诗挑战幕数") }} × {{ tr("星数", "stars", "星数") }}</span>
+                        <span>+ {{ tr("好感度MAXキャラ数", "Max-friendship characters", "满好感角色数") }} × {{ friendship_multiplier }}</span>
+                        <span>+ max(360 − {{ tr("幽境クリアタイム", "Stygian clear time", "幽境通关时间") }}, 0)</span>
+                        <span>+ {{ tr("幽境ポイント", "Stygian points", "幽境点数") }} × {{ tr("幽境開催倍率", "season multiplier", "幽境期数倍率") }}</span>
+                        <span>]</span>
+                        <span>× max({{ tr("深境螺旋の星数", "Spiral Abyss stars", "深境螺旋星数") }} − 35, 0)</span>
                     </div>
 
                 </div>
 
             </section>
 
-            <!-- =========================
-                 ランク
-            ========================== -->
+            <!-- 幽境プロフィール値 -->
             <section class="criteria-section">
 
                 <h2>
-                    総合ランク
+                    {{ tr("プロフィール値用の幽境ポイント", "Stygian Points for Profile Value", "个人资料值用幽境点数") }}
+                </h2>
+
+                <table class="criteria-table">
+                    <tr><th>VI・≤180s</th><td>1,800</td></tr>
+                    <tr><th>VI・≥181s</th><td>1,600</td></tr>
+                    <tr><th>V</th><td>1,200</td></tr>
+                    <tr><th>IV</th><td>800</td></tr>
+                    <tr><th>III</th><td>400</td></tr>
+                    <tr><th>{{ tr("III未満・未挑戦", "Below III / Not attempted", "低于III／未挑战") }}</th><td>0</td></tr>
+                </table>
+
+                <h3 class="criteria-subtitle">
+                    {{ tr("幽境開催倍率", "Stygian Season Multiplier", "幽境期数倍率") }}
+                </h3>
+
+                <table class="criteria-table">
+                    <tr>
+                        <th>{{ tr("現在の倍率", "Current Multiplier", "当前倍率") }}</th>
+                        <td><strong>×{{ "%.2f" | format(stygian_multiplier) }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>{{ tr("計算式", "Formula", "计算公式") }}</th>
+                        <td><code>1 + {{ tr("開催期数", "season number", "期数") }} ÷ 100</code></td>
+                    </tr>
+                    <tr>
+                        <th>{{ tr("適用対象", "Applied To", "适用对象") }}</th>
+                        <td>{{ tr("幽境ポイントのみ", "Stygian points only", "仅幽境点数") }}</td>
+                    </tr>
+                </table>
+
+            </section>
+
+            <!-- 理論プロフィール値 -->
+            <section class="criteria-section">
+
+                <h2>
+                    {{ tr("理論プロフィール値", "Theoretical Profile Value", "理论个人资料值") }}
+                </h2>
+
+                <table class="criteria-table">
+                    <tr><th>{{ tr("アチーブメント", "Achievements", "成就") }}</th><td>{{ theory_achievement }}</td></tr>
+                    <tr><th>{{ tr("幻想シアター", "Imaginarium Theater", "幻想真境剧诗") }}</th><td>{{ tr("第10幕・★12", "Act 10・★12", "第10幕・★12") }}</td></tr>
+                    <tr><th>{{ tr("好感度MAX", "Max Friendship", "满好感") }}</th><td>{{ theory_friendship_count }}{{ tr("人", " characters", "人") }}</td></tr>
+                    <tr><th>{{ tr("幽境タイム", "Stygian Time", "幽境时间") }}</th><td>46{{ tr("秒", " sec", "秒") }}</td></tr>
+                    <tr><th>{{ tr("幽境ポイント", "Stygian Points", "幽境点数") }}</th><td>1,800</td></tr>
+                    <tr><th>{{ tr("深境螺旋", "Spiral Abyss", "深境螺旋") }}</th><td>36★</td></tr>
+                </table>
+
+                <div class="formula-card">
+                    <p class="formula-title">
+                        {{ tr("現在の理論プロフィール値", "Current Theoretical Profile Value", "当前理论个人资料值") }}
+                    </p>
+                    <div class="formula-result">
+                        <strong>{{ "{:,}".format(theoretical_profile_value) }}</strong>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ランク -->
+            <section class="criteria-section">
+
+                <h2>
+                    {{ tr("総合ランク", "Overall Rank", "综合等级") }}
                 </h2>
 
                 <table class="criteria-table rank-table">
-
-                    <tr>
-                        <th>95点以上</th>
-                        <td>SSS</td>
-                    </tr>
-
-                    <tr>
-                        <th>90～94点</th>
-                        <td>SS+</td>
-                    </tr>
-
-                    <tr>
-                        <th>85～89点</th>
-                        <td>SS</td>
-                    </tr>
-
-                    <tr>
-                        <th>80～84点</th>
-                        <td>S</td>
-                    </tr>
-
-                    <tr>
-                        <th>70～79点</th>
-                        <td>A+</td>
-                    </tr>
-
-                    <tr>
-                        <th>60～69点</th>
-                        <td>A</td>
-                    </tr>
-
-                    <tr>
-                        <th>50～59点</th>
-                        <td>B</td>
-                    </tr>
-
-                    <tr>
-                        <th>35～49点</th>
-                        <td>C</td>
-                    </tr>
-
-                    <tr>
-                        <th>0～34点</th>
-                        <td>D</td>
-                    </tr>
-
+                    <tr><th>95+</th><td>SSS</td></tr>
+                    <tr><th>90–94</th><td>SS+</td></tr>
+                    <tr><th>85–89</th><td>SS</td></tr>
+                    <tr><th>80–84</th><td>S</td></tr>
+                    <tr><th>70–79</th><td>A+</td></tr>
+                    <tr><th>60–69</th><td>A</td></tr>
+                    <tr><th>50–59</th><td>B</td></tr>
+                    <tr><th>35–49</th><td>C</td></tr>
+                    <tr><th>0–34</th><td>D</td></tr>
                 </table>
 
                 <p class="criteria-note">
-                    100点を超えた場合もSSSランクになります。
+                    {{ tr(
+                        "100点を超えた場合もSSSランクになります。",
+                        "Scores above 100 are also ranked SSS.",
+                        "超过100分时同样为SSS等级。"
+                    ) }}
                 </p>
 
             </section>
 
-            <!-- =========================
-                 注意事項
-            ========================== -->
+            <!-- 注意事項 -->
             <div class="criteria-footer">
 
                 <p>
-                    キャラクターの育成状況、命ノ星座、
-                    武器、聖遺物、課金額は採点対象に含みません。
+                    {{ tr(
+                        "キャラクターの育成状況、命ノ星座、武器、聖遺物、課金額は採点対象に含みません。",
+                        "Character builds, Constellations, weapons, artifacts, and spending are not included in the score.",
+                        "角色培养情况、命之座、武器、圣遗物及充值金额均不计入评分。"
+                    ) }}
                 </p>
 
                 <p>
-                    Enka.Networkで取得できない情報や、
-                    ゲーム内プロフィールで非公開になっている情報は、
-                    正しく反映されない場合があります。
+                    {{ tr(
+                        "Enka.Networkで取得できない情報や、ゲーム内プロフィールで非公開になっている情報は、正しく反映されない場合があります。",
+                        "Information unavailable through Enka.Network or hidden in the in-game profile may not be reflected correctly.",
+                        "Enka.Network无法获取的信息，或游戏内个人资料中未公开的信息，可能无法正确显示。"
+                    ) }}
                 </p>
 
                 <a
                     class="back-button"
-                    href="{{ url_for('home') }}"
+                    href="{{ url_for('home', lang=language) }}"
                 >
-                    UID入力画面へ戻る
+                    {{ tr("UID入力画面へ戻る", "Back to UID Entry", "返回UID输入页面") }}
+                </a>
+
+                <a
+                    class="criteria-button"
+                    href="{{ url_for('ranking', lang=language) }}"
+                >
+                    {{ texts.ranking_button }}
                 </a>
 
             </div>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="{{ texts.html_lang }}">
 
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>原神プロフィール格付け</title>
+    <title>{{ texts.site_title }}</title>
 
     <link
         rel="stylesheet"
@@ -23,17 +23,49 @@
 
         <section class="input-card">
 
+            <!-- 言語切り替え -->
+            <div class="language-switcher">
+
+                <span class="language-label">
+                    {{ texts.language_label }}
+                </span>
+
+                <a
+                    class="language-button
+                    {% if language == 'ja' %}active{% endif %}"
+                    href="{{ url_for('home', lang='ja') }}"
+                >
+                    🇯🇵 日本語
+                </a>
+
+                <a
+                    class="language-button
+                    {% if language == 'en' %}active{% endif %}"
+                    href="{{ url_for('home', lang='en') }}"
+                >
+                    🇺🇸 English
+                </a>
+
+                <a
+                    class="language-button
+                    {% if language == 'zh' %}active{% endif %}"
+                    href="{{ url_for('home', lang='zh') }}"
+                >
+                    🇨🇳 简体中文
+                </a>
+
+            </div>
+
             <p class="eyebrow">
-                GENSHIN PROFILE RANK
+                {{ texts.eyebrow }}
             </p>
 
             <h1>
-                原神プロフィール格付け
+                {{ texts.site_title }}
             </h1>
 
             <p class="description">
-                UIDを入力すると、Enka.Networkの公開プロフィールをもとに、
-                100点満点で自動採点します。
+                {{ texts.home_description }}
             </p>
 
             {% if error %}
@@ -57,8 +89,15 @@
                 method="GET"
             >
 
+                <!-- 採点後も選択言語を維持 -->
+                <input
+                    type="hidden"
+                    name="lang"
+                    value="{{ language }}"
+                >
+
                 <label for="uid">
-                    原神UID
+                    {{ texts.uid_label }}
                 </label>
 
                 <input
@@ -66,7 +105,7 @@
                     type="text"
                     name="uid"
                     value="{{ entered_uid or '' }}"
-                    placeholder="例：800123456 または 1800123456"
+                    placeholder="{{ texts.uid_placeholder }}"
                     inputmode="numeric"
                     maxlength="10"
                     autocomplete="off"
@@ -74,107 +113,103 @@
                 >
 
                 <button type="submit">
-                    採点する
+                    {{ texts.score_button }}
                 </button>
 
             </form>
 
             <div class="home-links">
 
-    <a
-        class="home-menu-button"
-        href="{{ url_for('criteria') }}"
-    >
-        📖 採点基準を見る
-    </a>
+                <a
+                    class="home-menu-button"
+                    href="{{ url_for(
+                        'criteria',
+                        lang=language
+                    ) }}"
+                >
+                    📖 {{ texts.criteria_button }}
+                </a>
 
-    <a
-        class="home-menu-button"
-        href="{{ url_for('ranking') }}"
-    >
-        🏆 ランキングを見る
-    </a>
+                <a
+                    class="home-menu-button"
+                    href="{{ url_for(
+                        'ranking',
+                        lang=language
+                    ) }}"
+                >
+                    🏆 {{ texts.ranking_button }}
+                </a>
 
-</div>
+            </div>
 
             {% if ranking_count is defined %}
 
                 <p class="ranking-count">
-                    現在のランキング登録者数：
-                    <strong>{{ ranking_count }}人</strong>
+                    {{ texts.ranking_count_label }}
+                    <strong>
+                        {{ ranking_count }}{{ texts.people_unit }}
+                    </strong>
                 </p>
 
             {% endif %}
 
             <p class="notice">
-                ゲーム内プロフィールで戦績を公開してから採点してください。
+                {{ texts.notice }}
             </p>
-                <div class="credit">
 
-    <p>
-        <strong>Created by</strong><br>
+            <!-- クレジット -->
+            <div class="credit">
 
-        <a
-            href="https://x.com/sumire3rd_GI"
-            target="_blank"
-            rel="noopener noreferrer"
-        >
-            Sumire3rd
-        </a>
+                <p>
+                    <strong>{{ texts.created_by }}</strong><br>
 
-        <br>
+                    <a
+                        href="https://x.com/sumire3rd_GI"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Sumire3rd<br>
+                        𝕏 @sumire3rd_GI
+                    </a>
+                </p>
 
-        <a
-            href="https://x.com/sumire3rd_GI"
-            target="_blank"
-            rel="noopener noreferrer"
-        >
-            𝕏 @sumire3rd_GI
-        </a>
-    </p>
+                <p>
+                    <strong>
+                        {{ texts.scoring_formula_by }}
+                    </strong><br>
 
-    <p>
-        <strong>Scoring Formula by</strong><br>
+                    <a
+                        href="https://x.com/Volmr9"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        つぐちゃん<br>
+                        𝕏 @Volmr9
+                    </a>
+                </p>
 
-        <a
-            href="https://x.com/Volmr9"
-            target="_blank"
-            rel="noopener noreferrer"
-        >
-            つぐちゃん
-        </a>
+                <p>
+                    {{ texts.powered_by }}
 
-        <br>
+                    <a
+                        href="https://enka.network/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Enka.Network
+                    </a>
+                </p>
 
-        <a
-            href="https://x.com/Volmr9"
-            target="_blank"
-            rel="noopener noreferrer"
-        >
-            𝕏 @Volmr9
-        </a>
-    </p>
+                <p>
+                    Genshin Impact © COGNOSPHERE / HoYoverse
+                </p>
 
-    <p>
-        Powered by
-        <a
-            href="https://enka.network/"
-            target="_blank"
-            rel="noopener noreferrer"
-        >
-            Enka.Network
-        </a>
-    </p>
+                <p class="credit-note">
+                    {{ texts.unofficial_notice }}
+                </p>
 
-    <p>
-        Genshin Impact © COGNOSPHERE / HoYoverse
-    </p>
+            </div>
 
-    <p class="credit-note">
-        ※ 本サイトは非公式のファンサイトです。
-    </p>
-
-</div>
         </section>
 
     </main>
