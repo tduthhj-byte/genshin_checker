@@ -251,7 +251,7 @@ def home():
         "index.html",
         language=language,
         texts=texts,
-        ranking_count=get_ranking_count(),
+        ranking_count = 0,
         ranking_error=request.args.get(
             "ranking_error",
             "",
