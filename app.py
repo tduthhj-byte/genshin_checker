@@ -1,3 +1,5 @@
+import time
+
 from flask import (
     Flask,
     redirect,
@@ -37,6 +39,32 @@ from score import (
 )
 
 app = Flask(__name__)
+RANKING_COUNT_CACHE = {
+    "value": 0,
+    "expires_at": 0,
+}
+
+
+def get_cached_ranking_count():
+    """ランキング登録人数を10分間保存して再利用する。"""
+
+    now = time.time()
+
+    if now < RANKING_COUNT_CACHE["expires_at"]:
+        return RANKING_COUNT_CACHE["value"]
+
+    count = get_ranking_count()
+
+    RANKING_COUNT_CACHE["value"] = count
+    RANKING_COUNT_CACHE["expires_at"] = now + 600
+
+    return count
+
+
+def clear_ranking_count_cache():
+    """ランキング登録後に人数キャッシュをリセットする。"""
+
+    RANKING_COUNT_CACHE["expires_at"] = 0
 
 # create_table()
 
@@ -251,7 +279,7 @@ def home():
         "index.html",
         language=language,
         texts=texts,
-        ranking_count = 0,
+        ranking_count = get_cached_ranking_count(),
         ranking_error=request.args.get(
             "ranking_error",
             "",
@@ -306,7 +334,7 @@ def rank():
                 "UIDは数字で入力してください。",
             ),
             entered_uid=uid_text,
-            ranking_count=get_ranking_count(),
+            ranking_count=get_cached_ranking_count(),
         )
 
     if len(uid_text) not in (9, 10):
@@ -319,7 +347,7 @@ def rank():
                 "UIDは9桁または10桁で入力してください。",
             ),
             entered_uid=uid_text,
-            ranking_count=get_ranking_count(),
+            ranking_count=get_cached_ranking_count(),
         )
 
     uid = int(uid_text)
@@ -365,7 +393,7 @@ def rank():
                 ),
             ),
             entered_uid=uid_text,
-            ranking_count=get_ranking_count(),
+            ranking_count=get_cached_ranking_count(),
         )
 
 
@@ -445,6 +473,8 @@ def register_ranking():
             stygian_clear_time=player_data["stygian_clear_time"],
             server=server,
         )
+
+        clear_ranking_count_cache()
 
         position = get_player_position(
             uid,
