@@ -38,7 +38,7 @@ from score import (
 
 app = Flask(__name__)
 
-create_table()
+# create_table()
 
 
 def get_language(source="args"):
