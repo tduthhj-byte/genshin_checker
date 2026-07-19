@@ -27,6 +27,15 @@
         src="{{ url_for('static', filename='js/result.js') }}"
         defer
     ></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ST36LT768J"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-ST36LT768J');
+    </script>
 </head>
 
 <body>
