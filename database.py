@@ -1,35 +1,51 @@
 import os
 from datetime import datetime
 
-import psycopg
 from dotenv import load_dotenv
 from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 
 
 load_dotenv()
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URLが設定されていません。"
+    )
+
+
+# Supabase PostgreSQLへの接続を使い回す。
+# Gunicornの各ワーカーごとに、この接続プールが作成される。
+pool = ConnectionPool(
+    conninfo=DATABASE_URL,
+    min_size=1,
+    max_size=5,
+    kwargs={
+        "row_factory": dict_row,
+    },
+    open=True,
+)
+
 
 def get_connection():
     """
-    Supabase PostgreSQLへ接続する。
+    Supabase PostgreSQLの接続プールから
+    接続を取得する。
+
+    with文を抜けると接続は切断されず、
+    接続プールへ返却される。
     """
 
-    if not DATABASE_URL:
-        raise RuntimeError(
-            "DATABASE_URLが設定されていません。"
-        )
-
-    return psycopg.connect(
-        DATABASE_URL,
-        row_factory=dict_row,
-    )
+    return pool.connection()
 
 
 def create_table():
     """
-    ランキング用テーブルを作成する。
+    ランキング用テーブルと採点済みプロフィール用テーブル、
+    および検索・順位計算用インデックスを作成する。
+
     すでに存在する場合は何もしない。
     """
 
@@ -59,9 +75,55 @@ def create_table():
 
             cursor.execute(
                 """
+                CREATE TABLE IF NOT EXISTS scored_profiles (
+                    uid BIGINT PRIMARY KEY,
+                    profile_value INTEGER NOT NULL DEFAULT 0,
+                    total_score INTEGER NOT NULL DEFAULT 0,
+                    rank_name TEXT NOT NULL,
+                    server TEXT NOT NULL DEFAULT 'unknown',
+                    updated_at TIMESTAMPTZ NOT NULL
+                )
+                """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                ranking_profile_value_idx
+                ON ranking_entries (
+                    profile_value DESC,
+                    updated_at ASC
+                )
+                """
+            )
+
+            cursor.execute(
+                """
                 CREATE INDEX IF NOT EXISTS
                 ranking_server_profile_value_idx
                 ON ranking_entries (
+                    server,
+                    profile_value DESC,
+                    updated_at ASC
+                )
+                """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                scored_profile_value_idx
+                ON scored_profiles (
+                    profile_value DESC
+                )
+                """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                scored_server_profile_value_idx
+                ON scored_profiles (
                     server,
                     profile_value DESC
                 )
@@ -88,6 +150,8 @@ def save_or_update_player(
     server="unknown",
 ):
     """
+    公開ランキングへプレイヤーを登録する。
+
     未登録なら新規登録し、
     登録済みなら最新情報へ更新する。
     """
@@ -120,7 +184,6 @@ def save_or_update_player(
                     %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s
                 )
-
                 ON CONFLICT (uid) DO UPDATE SET
                     nickname = EXCLUDED.nickname,
                     icon_url = EXCLUDED.icon_url,
@@ -164,15 +227,15 @@ def get_ranking(
     server=None,
 ):
     """
-    プロフィール値が高い順にランキングを取得する。
+    プロフィール値が高い順に公開ランキングを取得する。
+
     server指定時はサーバー別に絞り込む。
     """
 
-    limit = int(limit)
+    limit = max(1, min(int(limit), 1000))
 
     with get_connection() as connection:
         with connection.cursor() as cursor:
-
             if server and server != "global":
                 cursor.execute(
                     """
@@ -191,7 +254,6 @@ def get_ranking(
                         limit,
                     ),
                 )
-
             else:
                 cursor.execute(
                     """
@@ -213,7 +275,7 @@ def get_ranking(
 
 def get_player(uid):
     """
-    指定UIDの登録情報を取得する。
+    指定UIDの公開ランキング登録情報を取得する。
     """
 
     with get_connection() as connection:
@@ -237,66 +299,86 @@ def get_player_position(
     server=None,
 ):
     """
-    指定UIDの現在順位を取得する。
-    server指定時はサーバー内順位を返す。
+    指定UIDの公開ランキング順位を1回のSQLで取得する。
+
+    server指定時は、そのプレイヤーが同じサーバーに
+    登録されている場合だけサーバー内順位を返す。
     """
-
-    player = get_player(uid)
-
-    if not player:
-        return None
-
-    profile_value = int(
-        player["profile_value"]
-    )
-
-    if profile_value <= 0:
-        return None
 
     with get_connection() as connection:
         with connection.cursor() as cursor:
-
             if server and server != "global":
                 cursor.execute(
                     """
-                    SELECT COUNT(*) + 1 AS position
-                    FROM ranking_entries
-                    WHERE
-                        profile_value > %s
-                        AND server = %s
+                    SELECT
+                        CASE
+                            WHEN
+                                target.profile_value > 0
+                                AND target.server = %s
+                            THEN (
+                                SELECT COUNT(*) + 1
+                                FROM ranking_entries AS ranked
+                                WHERE
+                                    ranked.profile_value
+                                        > target.profile_value
+                                    AND ranked.server = %s
+                            )
+                            ELSE NULL
+                        END AS position
+                    FROM ranking_entries AS target
+                    WHERE target.uid = %s
                     """,
                     (
-                        profile_value,
                         str(server),
+                        str(server),
+                        int(uid),
                     ),
                 )
-
             else:
                 cursor.execute(
                     """
-                    SELECT COUNT(*) + 1 AS position
-                    FROM ranking_entries
-                    WHERE profile_value > %s
+                    SELECT
+                        CASE
+                            WHEN target.profile_value > 0
+                            THEN (
+                                SELECT COUNT(*) + 1
+                                FROM ranking_entries AS ranked
+                                WHERE
+                                    ranked.profile_value
+                                        > target.profile_value
+                            )
+                            ELSE NULL
+                        END AS position
+                    FROM ranking_entries AS target
+                    WHERE target.uid = %s
                     """,
-                    (profile_value,),
+                    (int(uid),),
                 )
 
             row = cursor.fetchone()
 
-    return int(row["position"])
+    if not row:
+        return None
+
+    position = row.get("position")
+
+    if position is None:
+        return None
+
+    return int(position)
 
 
 def get_ranking_count(
     server=None,
 ):
     """
-    ランキング登録人数を取得する。
+    公開ランキング登録人数を取得する。
+
     server指定時はサーバー別人数を返す。
     """
 
     with get_connection() as connection:
         with connection.cursor() as cursor:
-
             if server and server != "global":
                 cursor.execute(
                     """
@@ -308,7 +390,6 @@ def get_ranking_count(
                     """,
                     (str(server),),
                 )
-
             else:
                 cursor.execute(
                     """
@@ -322,6 +403,7 @@ def get_ranking_count(
 
     return int(row["total"])
 
+
 def save_scored_profile(
     uid,
     profile_value,
@@ -330,8 +412,9 @@ def save_scored_profile(
     server,
 ):
     """
-    採点したUIDを保存する。
-    既に存在する場合は最新情報へ更新する。
+    採点したUIDを母数用テーブルへ保存する。
+
+    すでに存在する場合は最新情報へ更新する。
     """
 
     updated_at = datetime.now().astimezone()
@@ -356,8 +439,7 @@ def save_scored_profile(
                     %s,
                     %s
                 )
-                ON CONFLICT (uid)
-                DO UPDATE SET
+                ON CONFLICT (uid) DO UPDATE SET
                     profile_value = EXCLUDED.profile_value,
                     total_score = EXCLUDED.total_score,
                     rank_name = EXCLUDED.rank_name,
@@ -377,43 +459,17 @@ def save_scored_profile(
         connection.commit()
 
 
-def get_scored_count(server=None):
+def get_scored_count(
+    server=None,
+):
     """
-    採点済み人数を取得する。
-    """
+    採点済みUIDの人数を取得する。
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
-
-            if server and server != "global":
-                cursor.execute(
-                    """
-                    SELECT COUNT(*) AS total
-                    FROM scored_profiles
-                    WHERE server = %s
-                    """,
-                    (str(server),),
-                )
-            else:
-                cursor.execute(
-                    """
-                    SELECT COUNT(*) AS total
-                    FROM scored_profiles
-                    """
-                )
-
-            row = cursor.fetchone()
-
-    return int(row["total"])
-
-def get_scored_count(server=None):
-    """
-    採点済み人数を取得する。
+    server指定時はサーバー別人数を返す。
     """
 
     with get_connection() as connection:
         with connection.cursor() as cursor:
-
             if server and server != "global":
                 cursor.execute(
                     """
@@ -441,53 +497,63 @@ def get_scored_position(
     server=None,
 ):
     """
-    採点済みUID全体での順位を取得する。
+    採点済みUID全体での順位を1回のSQLで取得する。
+
+    server指定時は、そのUIDが同じサーバーに
+    保存されている場合だけサーバー内順位を返す。
     """
 
     with get_connection() as connection:
         with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT profile_value
-                FROM scored_profiles
-                WHERE uid = %s
-                """,
-                (int(uid),),
-            )
-
-            player = cursor.fetchone()
-
-            if not player:
-                return None
-
-            profile_value = int(
-                player["profile_value"]
-            )
-
             if server and server != "global":
                 cursor.execute(
                     """
-                    SELECT COUNT(*) + 1 AS position
-                    FROM scored_profiles
-                    WHERE
-                        profile_value > %s
-                        AND server = %s
+                    SELECT
+                        CASE
+                            WHEN target.server = %s
+                            THEN (
+                                SELECT COUNT(*) + 1
+                                FROM scored_profiles AS scored
+                                WHERE
+                                    scored.profile_value
+                                        > target.profile_value
+                                    AND scored.server = %s
+                            )
+                            ELSE NULL
+                        END AS position
+                    FROM scored_profiles AS target
+                    WHERE target.uid = %s
                     """,
                     (
-                        profile_value,
                         str(server),
+                        str(server),
+                        int(uid),
                     ),
                 )
             else:
                 cursor.execute(
                     """
-                    SELECT COUNT(*) + 1 AS position
-                    FROM scored_profiles
-                    WHERE profile_value > %s
+                    SELECT (
+                        SELECT COUNT(*) + 1
+                        FROM scored_profiles AS scored
+                        WHERE
+                            scored.profile_value
+                                > target.profile_value
+                    ) AS position
+                    FROM scored_profiles AS target
+                    WHERE target.uid = %s
                     """,
-                    (profile_value,),
+                    (int(uid),),
                 )
 
             row = cursor.fetchone()
 
-    return int(row["position"])
+    if not row:
+        return None
+
+    position = row.get("position")
+
+    if position is None:
+        return None
+
+    return int(position)
