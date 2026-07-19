@@ -20,12 +20,8 @@ if not DATABASE_URL:
 # Gunicornの各ワーカーごとに、この接続プールが作成される。
 pool = ConnectionPool(
     conninfo=DATABASE_URL,
-    min_size=0,
-    max_size=2,
-    timeout=10,
-    max_idle=300,
-    max_lifetime=1800,
-    check=ConnectionPool.check_connection,
+    min_size=1,
+    max_size=5,
     kwargs={
         "row_factory": dict_row,
     },
