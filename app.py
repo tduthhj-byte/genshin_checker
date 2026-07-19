@@ -314,14 +314,22 @@ def rank():
     language = get_language()
     texts = get_texts(language)
 
-    uid_text = request.args.get("uid", "").strip()
+    uid_text = request.args.get(
+        "uid",
+        "",
+    ).strip()
+
     ranking_registered = (
-        request.args.get("ranking_registered") == "1"
+        request.args.get(
+            "ranking_registered"
+        ) == "1"
     )
+
     ranking_position = request.args.get(
         "ranking_position",
         "",
     ).strip()
+
     ranking_error = request.args.get(
         "ranking_error",
         "",
@@ -340,7 +348,10 @@ def rank():
             ranking_count=get_cached_ranking_count(),
         )
 
-    if len(uid_text) not in (9, 10):
+    if len(uid_text) not in (
+        9,
+        10,
+    ):
         return render_template(
             "index.html",
             language=language,
@@ -356,34 +367,49 @@ def rank():
     uid = int(uid_text)
 
     try:
-        player_data = calculate_player_data(uid)
+        player_data = calculate_player_data(
+            uid
+        )
 
+        # 採点したUIDを母数用テーブルへ保存
         save_scored_profile(
             uid=uid,
-            profile_value=player_data["profile_value"],
-            total_score=player_data["total"],
-            rank_name=player_data["rank"],
+            profile_value=player_data[
+                "profile_value"
+            ],
+            total_score=player_data[
+                "total"
+            ],
+            rank_name=player_data[
+                "rank"
+            ],
             server=detect_server(uid),
         )
 
-        registered_player = get_player(uid)
-        ranking_position = get_scored_position(
-            uid,
-            server=detect_server(uid),
+        # 公開ランキングに登録済みか確認
+        registered_player = get_player(
+            uid
         )
 
         player_data.update(
-    {
-        "language": language,
-        "texts": texts,
-        "ranking_registered": ranking_registered,
-        "ranking_position": ranking_position,
-        "ranking_error": ranking_error,
-        "is_ranking_registered": (
-            registered_player is not None
-        ),
-    }
-)
+            {
+                "language": language,
+                "texts": texts,
+                "ranking_registered": (
+                    ranking_registered
+                ),
+                "ranking_position": (
+                    ranking_position
+                ),
+                "ranking_error": (
+                    ranking_error
+                ),
+                "is_ranking_registered": (
+                    registered_player
+                    is not None
+                ),
+            }
+        )
 
         return render_template(
             "result.html",
