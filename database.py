@@ -130,6 +130,28 @@ def create_table():
                 """
             )
 
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                ranking_rank_name_idx
+                ON ranking_entries (rank_name)
+                WHERE profile_value > 0
+                """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                ranking_server_rank_name_idx
+                ON ranking_entries (
+                    server,
+                    rank_name
+                )
+                WHERE profile_value > 0
+                """
+            )
+
         connection.commit()
 
 
@@ -650,4 +672,395 @@ def get_scored_rank_summary(
         "position": position,
         "total": total,
         "top_percent": top_percent,
+    }
+
+def get_statistics(
+    server="global",
+):
+    """
+    統計ページ用データをDBとの1往復で取得する。
+
+    ranking_entriesとscored_profilesの両方を対象にし、
+    同じUIDは1人として統合する。
+
+    同じUIDが両方のテーブルに存在する場合:
+    1. updated_atが新しいデータを優先
+    2. updated_atが同じ場合はscored_profilesを優先
+
+    取得内容:
+    - 統合後の人数
+    - 平均プロフィール値
+    - 中央プロフィール値
+    - 最高プロフィール値
+    - 平均スコア
+    - 最高スコア
+    - ランク帯分布
+    - サーバー別人数
+
+    serverが"global"の場合は全体集計。
+    それ以外は指定サーバー内だけを集計する。
+    """
+
+    selected_server = str(
+        server or "global"
+    ).strip().lower()
+
+    allowed_servers = {
+        "global",
+        "asia",
+        "america",
+        "europe",
+        "tw",
+        "cn",
+        "unknown",
+    }
+
+    if selected_server not in allowed_servers:
+        selected_server = "global"
+
+    rank_order = [
+        "SSS",
+        "SS+",
+        "SS",
+        "S+",
+        "S",
+        "A+",
+        "A",
+        "B+",
+        "B",
+        "C",
+        "D",
+    ]
+
+    server_order = [
+        "asia",
+        "america",
+        "europe",
+        "tw",
+        "cn",
+        "unknown",
+    ]
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                WITH combined_source AS (
+                    SELECT
+                        uid,
+                        profile_value,
+                        total_score,
+                        rank_name,
+                        server,
+                        updated_at,
+                        1 AS source_priority
+                    FROM ranking_entries
+
+                    UNION ALL
+
+                    SELECT
+                        uid,
+                        profile_value,
+                        total_score,
+                        rank_name,
+                        server,
+                        updated_at,
+                        2 AS source_priority
+                    FROM scored_profiles
+                ),
+                combined_profiles AS (
+                    SELECT DISTINCT ON (uid)
+                        uid,
+                        profile_value,
+                        total_score,
+                        rank_name,
+                        server,
+                        updated_at
+                    FROM combined_source
+                    ORDER BY
+                        uid,
+                        updated_at DESC,
+                        source_priority DESC
+                ),
+                filtered AS (
+                    SELECT
+                        profile_value,
+                        total_score,
+                        rank_name
+                    FROM combined_profiles
+                    WHERE
+                        (
+                            %s = 'global'
+                            OR server = %s
+                        )
+                ),
+                summary AS (
+                    SELECT
+                        COUNT(*)::BIGINT AS total_players,
+                        COALESCE(
+                            ROUND(AVG(profile_value)),
+                            0
+                        )::BIGINT AS average_profile_value,
+                        COALESCE(
+                            ROUND(
+                                PERCENTILE_CONT(0.5)
+                                WITHIN GROUP (
+                                    ORDER BY profile_value
+                                )
+                            ),
+                            0
+                        )::BIGINT AS median_profile_value,
+                        COALESCE(
+                            MAX(profile_value),
+                            0
+                        )::BIGINT AS highest_profile_value,
+                        COALESCE(
+                            ROUND(
+                                AVG(total_score)::NUMERIC,
+                                1
+                            ),
+                            0
+                        ) AS average_total_score,
+                        COALESCE(
+                            MAX(total_score),
+                            0
+                        )::BIGINT AS highest_total_score
+                    FROM filtered
+                ),
+                rank_counts AS (
+                    SELECT
+                        rank_name,
+                        COUNT(*)::BIGINT AS player_count
+                    FROM filtered
+                    GROUP BY rank_name
+                ),
+                server_counts AS (
+                    SELECT
+                        server,
+                        COUNT(*)::BIGINT AS player_count
+                    FROM combined_profiles
+                    GROUP BY server
+                )
+                SELECT
+                    summary.total_players,
+                    summary.average_profile_value,
+                    summary.median_profile_value,
+                    summary.highest_profile_value,
+                    summary.average_total_score,
+                    summary.highest_total_score,
+                    COALESCE(
+                        (
+                            SELECT JSONB_OBJECT_AGG(
+                                rank_name,
+                                player_count
+                            )
+                            FROM rank_counts
+                        ),
+                        '{}'::JSONB
+                    ) AS rank_counts,
+                    COALESCE(
+                        (
+                            SELECT JSONB_OBJECT_AGG(
+                                server,
+                                player_count
+                            )
+                            FROM server_counts
+                        ),
+                        '{}'::JSONB
+                    ) AS server_counts
+                FROM summary
+                """,
+                (
+                    selected_server,
+                    selected_server,
+                ),
+            )
+
+            row = cursor.fetchone()
+
+    if not row:
+        row = {
+            "total_players": 0,
+            "average_profile_value": 0,
+            "median_profile_value": 0,
+            "highest_profile_value": 0,
+            "average_total_score": 0,
+            "highest_total_score": 0,
+            "rank_counts": {},
+            "server_counts": {},
+        }
+
+    rank_counts_raw = row.get(
+        "rank_counts"
+    ) or {}
+
+    server_counts_raw = row.get(
+        "server_counts"
+    ) or {}
+
+    rank_counts = {
+        str(rank): int(count)
+        for rank, count in rank_counts_raw.items()
+    }
+
+    server_counts = {
+        str(server_name): int(count)
+        for server_name, count
+        in server_counts_raw.items()
+    }
+
+    total_players = int(
+        row.get("total_players") or 0
+    )
+
+    rank_distribution = []
+
+    for rank in rank_order:
+        count = rank_counts.get(
+            rank,
+            0,
+        )
+
+        percentage = (
+            round(
+                count
+                / total_players
+                * 100,
+                1,
+            )
+            if total_players > 0
+            else 0.0
+        )
+
+        rank_distribution.append(
+            {
+                "rank": rank,
+                "count": count,
+                "percentage": percentage,
+            }
+        )
+
+    known_ranks = set(rank_order)
+
+    for rank in sorted(
+        name
+        for name in rank_counts
+        if name not in known_ranks
+    ):
+        count = rank_counts[rank]
+
+        percentage = (
+            round(
+                count
+                / total_players
+                * 100,
+                1,
+            )
+            if total_players > 0
+            else 0.0
+        )
+
+        rank_distribution.append(
+            {
+                "rank": rank,
+                "count": count,
+                "percentage": percentage,
+            }
+        )
+
+    global_server_total = sum(
+        server_counts.values()
+    )
+
+    server_distribution = []
+
+    for server_name in server_order:
+        count = server_counts.get(
+            server_name,
+            0,
+        )
+
+        percentage = (
+            round(
+                count
+                / global_server_total
+                * 100,
+                1,
+            )
+            if global_server_total > 0
+            else 0.0
+        )
+
+        server_distribution.append(
+            {
+                "server": server_name,
+                "count": count,
+                "percentage": percentage,
+            }
+        )
+
+    known_servers = set(server_order)
+
+    for server_name in sorted(
+        name
+        for name in server_counts
+        if name not in known_servers
+    ):
+        count = server_counts[
+            server_name
+        ]
+
+        percentage = (
+            round(
+                count
+                / global_server_total
+                * 100,
+                1,
+            )
+            if global_server_total > 0
+            else 0.0
+        )
+
+        server_distribution.append(
+            {
+                "server": server_name,
+                "count": count,
+                "percentage": percentage,
+            }
+        )
+
+    return {
+        "selected_server": selected_server,
+        "total_players": total_players,
+        "average_profile_value": int(
+            row.get(
+                "average_profile_value"
+            ) or 0
+        ),
+        "median_profile_value": int(
+            row.get(
+                "median_profile_value"
+            ) or 0
+        ),
+        "highest_profile_value": int(
+            row.get(
+                "highest_profile_value"
+            ) or 0
+        ),
+        "average_total_score": float(
+            row.get(
+                "average_total_score"
+            ) or 0
+        ),
+        "highest_total_score": int(
+            row.get(
+                "highest_total_score"
+            ) or 0
+        ),
+        "rank_distribution": (
+            rank_distribution
+        ),
+        "server_distribution": (
+            server_distribution
+        ),
     }

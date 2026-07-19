@@ -515,6 +515,24 @@
                     📖 {{ texts.criteria_button }}
                 </a>
 
+                <a
+                    class="ranking-action-button secondary"
+                    href="{{ url_for(
+                        'statistics',
+                        lang=language,
+                        server=selected_server
+                    ) }}"
+                >
+                    📊
+                    {% if language == "en" %}
+                        Statistics
+                    {% elif language == "zh" %}
+                        统计
+                    {% else %}
+                        統計
+                    {% endif %}
+                </a>
+
             </div>
 
         </section>

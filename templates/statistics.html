@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="{{ texts.html_lang }}">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% if language == "en" %}
+            Statistics
+        {% elif language == "zh" %}
+            统计
+        {% else %}
+            統計
+        {% endif %}
+        ｜{{ texts.site_title }}
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+        defer
+    ></script>
+
+    <!-- Google tag (gtag.js) -->
+    <script
+        async
+        src="https://www.googletagmanager.com/gtag/js?id=G-ST36LT768J"
+    ></script>
+
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+
+        gtag("js", new Date());
+        gtag("config", "G-ST36LT768J");
+    </script>
+
+    <style>
+        .statistics-card {
+            padding: 28px;
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            background: var(--card);
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
+        }
+
+        .statistics-summary-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .statistics-summary-item {
+            min-width: 0;
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--card-light);
+        }
+
+        .statistics-summary-item span {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--subtext);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .statistics-summary-item strong {
+            display: block;
+            overflow-wrap: anywhere;
+            color: var(--gold);
+            font-size: clamp(1.35rem, 3vw, 2rem);
+            line-height: 1.2;
+        }
+
+        .statistics-section-grid {
+            display: grid;
+            grid-template-columns:
+                minmax(0, 1.35fr)
+                minmax(280px, 0.65fr);
+            gap: 20px;
+        }
+
+        .statistics-panel {
+            min-width: 0;
+            padding: 22px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.035);
+        }
+
+        .statistics-panel h2 {
+            margin-bottom: 8px;
+            color: var(--gold);
+            font-size: 1.25rem;
+        }
+
+        .statistics-panel-description {
+            margin-bottom: 22px;
+            color: var(--subtext);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .statistics-chart-wrap {
+            position: relative;
+            width: 100%;
+            min-height: 420px;
+        }
+
+        .statistics-chart-wrap.doughnut {
+            min-height: 360px;
+        }
+
+        .statistics-chart-wrap canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .statistics-rank-list,
+        .statistics-server-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .statistics-list-row {
+            display: grid;
+            grid-template-columns:
+                minmax(54px, auto)
+                minmax(0, 1fr)
+                auto;
+            gap: 12px;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.035);
+        }
+
+        .statistics-list-name {
+            color: var(--gold);
+            font-weight: 800;
+        }
+
+        .statistics-list-count {
+            color: var(--text);
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .statistics-list-percentage {
+            color: var(--subtext);
+            font-size: 0.86rem;
+            text-align: right;
+        }
+
+        .statistics-error {
+            margin-bottom: 24px;
+        }
+
+        .statistics-empty {
+            padding: 42px 18px;
+            color: var(--subtext);
+            line-height: 1.8;
+            text-align: center;
+        }
+
+        .statistics-actions {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 28px;
+        }
+
+        .statistics-action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 210px;
+            min-height: 50px;
+            padding: 13px 22px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: var(--text);
+            font-weight: 700;
+            text-decoration: none;
+            transition:
+                transform 0.2s ease,
+                background 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .statistics-action-button:hover {
+            transform: translateY(-2px);
+            border-color: rgba(241, 207, 115, 0.55);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .statistics-action-button.primary {
+            border-color: transparent;
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--gold),
+                    var(--gold-dark)
+                );
+            color: #282114;
+        }
+
+        @media (max-width: 800px) {
+            .statistics-summary-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .statistics-section-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .statistics-chart-wrap {
+                min-height: 360px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .statistics-card {
+                padding: 16px;
+            }
+
+            .statistics-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .statistics-summary-item {
+                padding: 17px;
+            }
+
+            .statistics-panel {
+                padding: 17px;
+            }
+
+            .statistics-chart-wrap {
+                min-height: 320px;
+            }
+
+            .statistics-chart-wrap.doughnut {
+                min-height: 300px;
+            }
+
+            .statistics-list-row {
+                grid-template-columns:
+                    minmax(48px, auto)
+                    auto
+                    auto;
+                gap: 8px;
+            }
+
+            .statistics-action-button {
+                width: 100%;
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <header class="page-header">
+
+            <div class="language-switcher">
+
+                <a
+                    class="language-button
+                    {% if language == 'ja' %}active{% endif %}"
+                    href="{{ url_for(
+                        'statistics',
+                        lang='ja',
+                        server=selected_server
+                    ) }}"
+                >
+                    🇯🇵 日本語
+                </a>
+
+                <a
+                    class="language-button
+                    {% if language == 'en' %}active{% endif %}"
+                    href="{{ url_for(
+                        'statistics',
+                        lang='en',
+                        server=selected_server
+                    ) }}"
+                >
+                    🇺🇸 English
+                </a>
+
+                <a
+                    class="language-button
+                    {% if language == 'zh' %}active{% endif %}"
+                    href="{{ url_for(
+                        'statistics',
+                        lang='zh',
+                        server=selected_server
+                    ) }}"
+                >
+                    🇨🇳 简体中文
+                </a>
+
+            </div>
+
+            <p class="eyebrow">
+                PROFILE STATISTICS
+            </p>
+
+            <h1>
+                {% if language == "en" %}
+                    Statistics
+                {% elif language == "zh" %}
+                    统计
+                {% else %}
+                    統計
+                {% endif %}
+            </h1>
+
+            <p class="description">
+                {% if language == "en" %}
+                    Statistics for players registered in the public ranking.
+                {% elif language == "zh" %}
+                    公开排行榜登记玩家的统计数据。
+                {% else %}
+                    公開ランキング登録者の統計データです。
+                {% endif %}
+            </p>
+
+            <div class="server-tabs">
+
+                {% set tabs = [
+                    ("global", "🌍 Global"),
+                    ("asia", "🌏 Asia"),
+                    ("america", "🇺🇸 America"),
+                    ("europe", "🇪🇺 Europe"),
+                    ("tw", "🇹🇼 TW / HK / MO"),
+                    ("cn", "🇨🇳 China")
+                ] %}
+
+                {% for server_key, server_text in tabs %}
+
+                    <a
+                        class="server-tab
+                        {% if selected_server == server_key %}active{% endif %}"
+                        href="{{ url_for(
+                            'statistics',
+                            server=server_key,
+                            lang=language
+                        ) }}"
+                    >
+                        {{ server_text }}
+                    </a>
+
+                {% endfor %}
+
+            </div>
+
+            <p class="selected-server-label">
+
+                {% if language == "en" %}
+                    Showing:
+                {% elif language == "zh" %}
+                    当前显示：
+                {% else %}
+                    表示中：
+                {% endif %}
+
+                <strong>
+                    {{ selected_server_label }}
+                </strong>
+
+            </p>
+
+        </header>
+
+        <section class="statistics-card">
+
+            {% if statistics_error %}
+
+                <p class="error-message statistics-error">
+                    {{ statistics_error }}
+                </p>
+
+            {% endif %}
+
+            <div class="statistics-summary-grid">
+
+                <article class="statistics-summary-item">
+                    <span>
+                        {% if language == "en" %}
+                            Registered players
+                        {% elif language == "zh" %}
+                            登记人数
+                        {% else %}
+                            登録人数
+                        {% endif %}
+                    </span>
+
+                    <strong>
+                        {{ "{:,}".format(total_players) }}
+                    </strong>
+                </article>
+
+                <article class="statistics-summary-item">
+                    <span>
+                        {% if language == "en" %}
+                            Average Profile Value
+                        {% elif language == "zh" %}
+                            平均 Profile Value
+                        {% else %}
+                            平均Profile Value
+                        {% endif %}
+                    </span>
+
+                    <strong>
+                        {{ "{:,}".format(average_profile_value) }}
+                    </strong>
+                </article>
+
+                <article class="statistics-summary-item">
+                    <span>
+                        {% if language == "en" %}
+                            Median Profile Value
+                        {% elif language == "zh" %}
+                            Profile Value 中位数
+                        {% else %}
+                            Profile Value中央値
+                        {% endif %}
+                    </span>
+
+                    <strong>
+                        {{ "{:,}".format(median_profile_value) }}
+                    </strong>
+                </article>
+
+                <article class="statistics-summary-item">
+                    <span>
+                        {% if language == "en" %}
+                            Highest Profile Value
+                        {% elif language == "zh" %}
+                            最高 Profile Value
+                        {% else %}
+                            最高Profile Value
+                        {% endif %}
+                    </span>
+
+                    <strong>
+                        {{ "{:,}".format(highest_profile_value) }}
+                    </strong>
+                </article>
+
+                <article class="statistics-summary-item">
+                    <span>
+                        {% if language == "en" %}
+                            Average score
+                        {% elif language == "zh" %}
+                            平均分
+                        {% else %}
+                            平均点
+                        {% endif %}
+                    </span>
+
+                    <strong>
+                        {{ "%.1f"|format(average_total_score) }}
+                    </strong>
+                </article>
+
+                <article class="statistics-summary-item">
+                    <span>
+                        {% if language == "en" %}
+                            Highest score
+                        {% elif language == "zh" %}
+                            最高分
+                        {% else %}
+                            最高点
+                        {% endif %}
+                    </span>
+
+                    <strong>
+                        {{ highest_total_score }}
+                    </strong>
+                </article>
+
+            </div>
+
+            {% if total_players > 0 %}
+
+                <div class="statistics-section-grid">
+
+                    <section class="statistics-panel">
+
+                        <h2>
+                            {% if language == "en" %}
+                                Rank distribution
+                            {% elif language == "zh" %}
+                                等级分布
+                            {% else %}
+                                ランク帯分布
+                            {% endif %}
+                        </h2>
+
+                        <p class="statistics-panel-description">
+                            {% if language == "en" %}
+                                Number and percentage of registered players in each rank.
+                            {% elif language == "zh" %}
+                                各等级的登记人数和比例。
+                            {% else %}
+                                ランクごとの登録人数と割合です。
+                            {% endif %}
+                        </p>
+
+                        <div class="statistics-chart-wrap">
+                            <canvas id="rank-distribution-chart"></canvas>
+                        </div>
+
+                        <div class="statistics-rank-list">
+
+                            {% for item in rank_distribution %}
+
+                                {% if item.count > 0 %}
+
+                                    <div class="statistics-list-row">
+
+                                        <span class="statistics-list-name">
+                                            {{ item.rank }}
+                                        </span>
+
+                                        <span class="statistics-list-count">
+                                            {{ "{:,}".format(item.count) }}
+
+                                            {% if language == "ja" %}
+                                                人
+                                            {% elif language == "zh" %}
+                                                人
+                                            {% endif %}
+                                        </span>
+
+                                        <span class="statistics-list-percentage">
+                                            {{ item.percentage }}%
+                                        </span>
+
+                                    </div>
+
+                                {% endif %}
+
+                            {% endfor %}
+
+                        </div>
+
+                    </section>
+
+                    <section class="statistics-panel">
+
+                        <h2>
+                            {% if language == "en" %}
+                                Server distribution
+                            {% elif language == "zh" %}
+                                服务器分布
+                            {% else %}
+                                サーバー分布
+                            {% endif %}
+                        </h2>
+
+                        <p class="statistics-panel-description">
+                            {% if language == "en" %}
+                                Global share of registered players by server.
+                            {% elif language == "zh" %}
+                                各服务器登记玩家占全球登记人数的比例。
+                            {% else %}
+                                全登録者に占めるサーバー別の割合です。
+                            {% endif %}
+                        </p>
+
+                        <div class="statistics-chart-wrap doughnut">
+                            <canvas id="server-distribution-chart"></canvas>
+                        </div>
+
+                        <div class="statistics-server-list">
+
+                            {% for item in server_distribution %}
+
+                                {% if item.count > 0 %}
+
+                                    <div class="statistics-list-row">
+
+                                        <span class="statistics-list-name">
+                                            {{ server_labels.get(
+                                                item.server,
+                                                item.server
+                                            ) }}
+                                        </span>
+
+                                        <span class="statistics-list-count">
+                                            {{ "{:,}".format(item.count) }}
+
+                                            {% if language == "ja" %}
+                                                人
+                                            {% elif language == "zh" %}
+                                                人
+                                            {% endif %}
+                                        </span>
+
+                                        <span class="statistics-list-percentage">
+                                            {{ item.percentage }}%
+                                        </span>
+
+                                    </div>
+
+                                {% endif %}
+
+                            {% endfor %}
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+            {% else %}
+
+                <div class="statistics-empty">
+
+                    {% if language == "en" %}
+                        No registered players are available for this server yet.
+                    {% elif language == "zh" %}
+                        该服务器目前还没有登记玩家。
+                    {% else %}
+                        このサーバーには、まだ登録者がいません。
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
+
+            <div class="statistics-actions">
+
+                <a
+                    class="statistics-action-button primary"
+                    href="{{ url_for(
+                        'home',
+                        lang=language
+                    ) }}"
+                >
+                    🔍
+                    {% if language == "en" %}
+                        Score a UID
+                    {% elif language == "zh" %}
+                        UID评分
+                    {% else %}
+                        UIDを採点する
+                    {% endif %}
+                </a>
+
+                <a
+                    class="statistics-action-button"
+                    href="{{ url_for(
+                        'ranking',
+                        lang=language,
+                        server=selected_server
+                    ) }}"
+                >
+                    🏆
+                    {% if language == "en" %}
+                        Ranking
+                    {% elif language == "zh" %}
+                        排行榜
+                    {% else %}
+                        ランキング
+                    {% endif %}
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            if (typeof Chart === "undefined") {
+                return;
+            }
+
+            const rankDistribution = {{ rank_distribution | tojson }};
+            const serverDistribution = {{ server_distribution | tojson }};
+            const serverLabels = {{ server_labels | tojson }};
+
+            const visibleRanks = rankDistribution.filter(
+                (item) => Number(item.count) > 0
+            );
+
+            const rankCanvas = document.getElementById(
+                "rank-distribution-chart"
+            );
+
+            if (rankCanvas && visibleRanks.length > 0) {
+                new Chart(rankCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: visibleRanks.map(
+                            (item) => item.rank
+                        ),
+                        datasets: [
+                            {
+                                label: "Players",
+                                data: visibleRanks.map(
+                                    (item) => item.count
+                                ),
+                                borderWidth: 1,
+                                borderRadius: 8,
+                                backgroundColor: [
+                                    "#f1cf73",
+                                    "#e9bd63",
+                                    "#c7a7ff",
+                                    "#ad91eb",
+                                    "#77c8f3",
+                                    "#65b4df",
+                                    "#7ee6b0",
+                                    "#68d09a",
+                                    "#b9bdca",
+                                    "#969baa",
+                                    "#767b89"
+                                ]
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 850
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        const item = visibleRanks[
+                                            context.dataIndex
+                                        ];
+
+                                        return (
+                                            item.count.toLocaleString()
+                                            + " / "
+                                            + item.percentage
+                                            + "%"
+                                        );
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    color: "#f7f7fb",
+                                    font: {
+                                        weight: "bold"
+                                    }
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: "#b8bdcc",
+                                    precision: 0
+                                },
+                                grid: {
+                                    color: "rgba(255,255,255,0.08)"
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const visibleServers = serverDistribution.filter(
+                (item) => Number(item.count) > 0
+            );
+
+            const serverCanvas = document.getElementById(
+                "server-distribution-chart"
+            );
+
+            if (serverCanvas && visibleServers.length > 0) {
+                new Chart(serverCanvas, {
+                    type: "doughnut",
+                    data: {
+                        labels: visibleServers.map(
+                            (item) => (
+                                serverLabels[item.server]
+                                || item.server
+                            )
+                        ),
+                        datasets: [
+                            {
+                                data: visibleServers.map(
+                                    (item) => item.count
+                                ),
+                                backgroundColor: [
+                                    "#77c8f3",
+                                    "#f1cf73",
+                                    "#c7a7ff",
+                                    "#7ee6b0",
+                                    "#ff9e8e",
+                                    "#b9bdca"
+                                ],
+                                borderColor: "#303447",
+                                borderWidth: 3,
+                                hoverOffset: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: "58%",
+                        animation: {
+                            duration: 900
+                        },
+                        plugins: {
+                            legend: {
+                                position: "bottom",
+                                labels: {
+                                    color: "#f7f7fb",
+                                    padding: 14,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        const item = visibleServers[
+                                            context.dataIndex
+                                        ];
+
+                                        return (
+                                            context.label
+                                            + ": "
+                                            + item.count.toLocaleString()
+                                            + " / "
+                                            + item.percentage
+                                            + "%"
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+</body>
+
+</html>

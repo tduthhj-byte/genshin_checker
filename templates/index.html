@@ -151,6 +151,24 @@
                     🏆 {{ texts.ranking_button }}
                 </a>
 
+                <a
+                    class="home-menu-button"
+                    href="{{ url_for(
+                        'statistics',
+                        lang=language,
+                        server='global'
+                    ) }}"
+                >
+                    📊
+                    {% if language == "en" %}
+                        Statistics
+                    {% elif language == "zh" %}
+                        统计
+                    {% else %}
+                        統計
+                    {% endif %}
+                </a>
+
             </div>
 
             {% if ranking_count is defined %}

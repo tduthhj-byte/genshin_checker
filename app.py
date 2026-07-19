@@ -15,6 +15,7 @@ from database import (
     get_ranking,
     get_ranking_count,
     get_scored_rank_summary,
+    get_statistics,
     save_or_update_player,
     save_scored_profile,
 )
@@ -62,6 +63,13 @@ PROFILE_DATA_CACHE_SECONDS = 60
 PROFILE_DATA_CACHE_MAX_SIZE = 500
 
 
+# 統計ページのキャッシュ
+STATISTICS_CACHE = {}
+
+# 統計データを保持する秒数（15分）
+STATISTICS_CACHE_SECONDS = 900
+
+
 def get_cached_ranking_count():
     """ランキング登録人数を10分間保存して再利用する。"""
 
@@ -82,6 +90,55 @@ def clear_ranking_count_cache():
     """ランキング登録後に人数キャッシュをリセットする。"""
 
     RANKING_COUNT_CACHE["expires_at"] = 0
+
+
+def get_cached_statistics(server="global"):
+    """
+    統計データをサーバー別に15分間保存して再利用する。
+    """
+
+    selected_server = str(
+        server or "global"
+    ).strip().lower()
+
+    now = time.time()
+
+    cached = STATISTICS_CACHE.get(
+        selected_server
+    )
+
+    if cached:
+        if now < cached["expires_at"]:
+            return cached["value"]
+
+        STATISTICS_CACHE.pop(
+            selected_server,
+            None,
+        )
+
+    statistics = get_statistics(
+        selected_server
+    )
+
+    STATISTICS_CACHE[
+        selected_server
+    ] = {
+        "value": statistics,
+        "expires_at": (
+            now + STATISTICS_CACHE_SECONDS
+        ),
+    }
+
+    return statistics
+
+
+def clear_statistics_cache():
+    """
+    ランキング登録・更新後に
+    統計キャッシュをすべて削除する。
+    """
+
+    STATISTICS_CACHE.clear()
 
 
 # 必要なときだけコメントを外す
@@ -663,6 +720,94 @@ def rank():
         )
 
 
+@app.route("/statistics")
+def statistics():
+    """
+    公開ランキング登録者の統計ページを表示する。
+    """
+
+    language = get_language()
+    texts = get_texts(language)
+
+    selected_server = request.args.get(
+        "server",
+        "global",
+    ).strip().lower()
+
+    allowed_servers = {
+        "global",
+        "asia",
+        "america",
+        "europe",
+        "tw",
+        "cn",
+        "unknown",
+    }
+
+    if selected_server not in allowed_servers:
+        selected_server = "global"
+
+    server_labels = {
+        "global": "Global",
+        "asia": "Asia",
+        "america": "America",
+        "europe": "Europe",
+        "tw": "TW / HK / MO",
+        "cn": "China",
+        "unknown": "Unknown",
+    }
+
+    try:
+        statistics_data = get_cached_statistics(
+            selected_server
+        )
+
+        return render_template(
+            "statistics.html",
+            language=language,
+            texts=texts,
+            selected_server_label=(
+                server_labels[
+                    selected_server
+                ]
+            ),
+            server_labels=server_labels,
+            **statistics_data,
+        )
+
+    except Exception as error:
+        print(
+            "統計取得エラー: "
+            f"{type(error).__name__}: "
+            f"{error}"
+        )
+
+        return render_template(
+            "statistics.html",
+            language=language,
+            texts=texts,
+            selected_server=selected_server,
+            selected_server_label=(
+                server_labels[
+                    selected_server
+                ]
+            ),
+            server_labels=server_labels,
+            statistics_error=(
+                "統計データを取得できませんでした。"
+                "時間を置いて再度お試しください。"
+            ),
+            total_players=0,
+            average_profile_value=0,
+            median_profile_value=0,
+            highest_profile_value=0,
+            average_total_score=0,
+            highest_total_score=0,
+            rank_distribution=[],
+            server_distribution=[],
+        )
+
+
 @app.route(
     "/ranking/register",
     methods=["POST"],
@@ -784,6 +929,7 @@ def register_ranking():
         )
 
         clear_ranking_count_cache()
+        clear_statistics_cache()
 
         # 以前あったget_scored_position()は、
         # 取得結果を使用していなかったため削除
