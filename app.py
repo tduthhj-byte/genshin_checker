@@ -14,7 +14,6 @@ from database import (
     get_player_position,
     get_ranking,
     get_ranking_count,
-    get_scored_position,
     save_or_update_player,
     save_scored_profile,
 )
@@ -41,11 +40,25 @@ from score import (
     score_theater,
 )
 
+
 app = Flask(__name__)
+
+
+# ランキング登録人数のキャッシュ
 RANKING_COUNT_CACHE = {
     "value": 0,
     "expires_at": 0,
 }
+
+
+# Enkaプロフィール計算結果のキャッシュ
+PROFILE_DATA_CACHE = {}
+
+# キャッシュを保持する秒数
+PROFILE_DATA_CACHE_SECONDS = 60
+
+# キャッシュするUID数の上限
+PROFILE_DATA_CACHE_MAX_SIZE = 500
 
 
 def get_cached_ranking_count():
@@ -69,6 +82,8 @@ def clear_ranking_count_cache():
 
     RANKING_COUNT_CACHE["expires_at"] = 0
 
+
+# 必要なときだけコメントを外す
 # create_table()
 
 
@@ -128,22 +143,30 @@ def detect_server(uid):
 
     if uid_text.startswith("18"):
         return "asia"
+
     if uid_text.startswith("6"):
         return "america"
+
     if uid_text.startswith("7"):
         return "europe"
+
     if uid_text.startswith("8"):
         return "asia"
+
     if uid_text.startswith("9"):
         return "tw"
+
     if uid_text.startswith(("1", "2", "3", "5")):
         return "cn"
 
     return "unknown"
 
 
-def calculate_player_data(uid):
-    """Enkaからプロフィールを取得し、採点用データを計算する。"""
+def fetch_and_calculate_player_data(uid):
+    """
+    Enkaからプロフィールを取得し、
+    採点用データを計算する。
+    """
 
     showcase = get_profile(uid)
     player = showcase.player
@@ -155,14 +178,27 @@ def calculate_player_data(uid):
     theater_stars = player.theater_stars or 0
     stygian_difficulty = player.stygian_difficulty or 0
     stygian_clear_time = player.stygian_clear_time or 0
-    friendship_count = player.max_friendship_character_count or 0
+    friendship_count = (
+        player.max_friendship_character_count or 0
+    )
     icon_url = get_icon_url(player)
 
-    theater_value = 10 * theater_act * theater_stars
-    friendship_value = friendship_count * FRIENDSHIP_MULTIPLIER
+    theater_value = (
+        10
+        * theater_act
+        * theater_stars
+    )
+
+    friendship_value = (
+        friendship_count
+        * FRIENDSHIP_MULTIPLIER
+    )
 
     if stygian_clear_time > 0:
-        stygian_time_value = max(360 - stygian_clear_time, 0)
+        stygian_time_value = max(
+            360 - stygian_clear_time,
+            0,
+        )
     else:
         stygian_time_value = 0
 
@@ -170,14 +206,23 @@ def calculate_player_data(uid):
         stygian_difficulty,
         stygian_clear_time,
     )
+
     stygian_multiplier = get_stygian_multiplier()
+
     stygian_scaled_point = round(
-        raw_stygian_point * stygian_multiplier
+        raw_stygian_point
+        * stygian_multiplier
     )
+
     stygian_total_value = (
-        stygian_time_value + stygian_scaled_point
+        stygian_time_value
+        + stygian_scaled_point
     )
-    abyss_multiplier = max(abyss_stars - 35, 0)
+
+    abyss_multiplier = max(
+        abyss_stars - 35,
+        0,
+    )
 
     profile_value = calculate_profile_value(
         achievements=achievements,
@@ -189,17 +234,28 @@ def calculate_player_data(uid):
         stygian_clear_time=stygian_clear_time,
     )
 
-    achievement_score = score_achievement(achievements)
+    achievement_score = score_achievement(
+        achievements
+    )
+
     theater_score = score_theater(
         theater_act,
         theater_stars,
     )
+
     stygian_score = score_stygian(
         stygian_difficulty,
         stygian_clear_time,
     )
-    abyss_score = score_abyss(abyss_stars)
-    friendship_score = score_friendship(friendship_count)
+
+    abyss_score = score_abyss(
+        abyss_stars
+    )
+
+    friendship_score = score_friendship(
+        friendship_count
+    )
+
     ar_score = score_ar(ar)
 
     total = calculate_total_score(
@@ -210,11 +266,14 @@ def calculate_player_data(uid):
         friendship_score=friendship_score,
         ar_score=ar_score,
     )
+
     rank_result = rank_name(total)
 
     if THEORY_ACHIEVEMENT > 0:
         achievement_rate = (
-            achievements / THEORY_ACHIEVEMENT * 100
+            achievements
+            / THEORY_ACHIEVEMENT
+            * 100
         )
     else:
         achievement_rate = 0
@@ -239,12 +298,18 @@ def calculate_player_data(uid):
         "max_total_score": MAX_TOTAL_SCORE,
         "rank": rank_result,
         "profile_value": profile_value,
-        "theoretical_profile_value": THEORETICAL_PROFILE_VALUE,
+        "theoretical_profile_value": (
+            THEORETICAL_PROFILE_VALUE
+        ),
         "achievements": achievements,
         "theory_achievement": THEORY_ACHIEVEMENT,
-        "achievement_full_score_count": ACHIEVEMENT_FULL_SCORE_COUNT,
+        "achievement_full_score_count": (
+            ACHIEVEMENT_FULL_SCORE_COUNT
+        ),
         "achievement_rate": achievement_rate,
-        "achievement_score_rate": achievement_score_rate,
+        "achievement_score_rate": (
+            achievement_score_rate
+        ),
         "achievement_score": achievement_score,
         "theater_act": theater_act,
         "theater_stars": theater_stars,
@@ -255,7 +320,9 @@ def calculate_player_data(uid):
         "stygian_clear_time": stygian_clear_time,
         "raw_stygian_point": raw_stygian_point,
         "stygian_multiplier": stygian_multiplier,
-        "stygian_scaled_point": stygian_scaled_point,
+        "stygian_scaled_point": (
+            stygian_scaled_point
+        ),
         "stygian_time_value": stygian_time_value,
         "stygian_total_value": stygian_total_value,
         "stygian_score": stygian_score,
@@ -263,14 +330,90 @@ def calculate_player_data(uid):
         "abyss_multiplier": abyss_multiplier,
         "abyss_score": abyss_score,
         "friendship_count": friendship_count,
-        "theory_friendship_count": THEORY_FRIENDSHIP_COUNT,
-        "friendship_multiplier": FRIENDSHIP_MULTIPLIER,
+        "theory_friendship_count": (
+            THEORY_FRIENDSHIP_COUNT
+        ),
+        "friendship_multiplier": (
+            FRIENDSHIP_MULTIPLIER
+        ),
         "friendship_value": friendship_value,
         "friendship_score": friendship_score,
         "ar": ar,
         "ar_score": ar_score,
         "icon_url": icon_url,
     }
+
+
+def calculate_player_data(
+    uid,
+    force_refresh=False,
+):
+    """
+    同じUIDの採点結果を60秒間再利用する。
+
+    結果表示直後にランキング登録した場合、
+    Enkaへもう一度アクセスせず、
+    キャッシュ済みデータを利用する。
+    """
+
+    uid = int(uid)
+    now = time.time()
+
+    if not force_refresh:
+        cached = PROFILE_DATA_CACHE.get(uid)
+
+        if cached:
+            if now < cached["expires_at"]:
+                print(
+                    f"プロフィールキャッシュ使用: UID {uid}"
+                )
+
+                # 呼び出し元でupdateしても
+                # キャッシュ本体を変更しないようコピーする
+                return cached["data"].copy()
+
+            PROFILE_DATA_CACHE.pop(
+                uid,
+                None,
+            )
+
+    print(
+        f"Enkaからプロフィール取得: UID {uid}"
+    )
+
+    player_data = fetch_and_calculate_player_data(
+        uid
+    )
+
+    # キャッシュ件数が上限に達したら、
+    # 最も期限が早いデータを1件削除する
+    if (
+        len(PROFILE_DATA_CACHE)
+        >= PROFILE_DATA_CACHE_MAX_SIZE
+    ):
+        oldest_uid = min(
+            PROFILE_DATA_CACHE,
+            key=lambda cached_uid: (
+                PROFILE_DATA_CACHE[
+                    cached_uid
+                ]["expires_at"]
+            ),
+        )
+
+        PROFILE_DATA_CACHE.pop(
+            oldest_uid,
+            None,
+        )
+
+    PROFILE_DATA_CACHE[uid] = {
+        "data": player_data.copy(),
+        "expires_at": (
+            now
+            + PROFILE_DATA_CACHE_SECONDS
+        ),
+    }
+
+    return player_data.copy()
 
 
 @app.route("/")
@@ -282,7 +425,7 @@ def home():
         "index.html",
         language=language,
         texts=texts,
-        ranking_count = get_cached_ranking_count(),
+        ranking_count=get_cached_ranking_count(),
         ranking_error=request.args.get(
             "ranking_error",
             "",
@@ -300,12 +443,22 @@ def criteria():
         language=language,
         texts=texts,
         theory_achievement=THEORY_ACHIEVEMENT,
-        achievement_full_score_count=ACHIEVEMENT_FULL_SCORE_COUNT,
-        theory_friendship_count=THEORY_FRIENDSHIP_COUNT,
-        theoretical_profile_value=THEORETICAL_PROFILE_VALUE,
+        achievement_full_score_count=(
+            ACHIEVEMENT_FULL_SCORE_COUNT
+        ),
+        theory_friendship_count=(
+            THEORY_FRIENDSHIP_COUNT
+        ),
+        theoretical_profile_value=(
+            THEORETICAL_PROFILE_VALUE
+        ),
         max_total_score=MAX_TOTAL_SCORE,
-        friendship_multiplier=FRIENDSHIP_MULTIPLIER,
-        stygian_multiplier=get_stygian_multiplier(),
+        friendship_multiplier=(
+            FRIENDSHIP_MULTIPLIER
+        ),
+        stygian_multiplier=(
+            get_stygian_multiplier()
+        ),
     )
 
 
@@ -322,7 +475,8 @@ def rank():
     ranking_registered = (
         request.args.get(
             "ranking_registered"
-        ) == "1"
+        )
+        == "1"
     )
 
     ranking_position = request.args.get(
@@ -345,23 +499,27 @@ def rank():
                 "UIDは数字で入力してください。",
             ),
             entered_uid=uid_text,
-            ranking_count=get_cached_ranking_count(),
+            ranking_count=(
+                get_cached_ranking_count()
+            ),
         )
 
-    if len(uid_text) not in (
-        9,
-        10,
-    ):
+    if len(uid_text) not in (9, 10):
         return render_template(
             "index.html",
             language=language,
             texts=texts,
             error=texts.get(
                 "uid_length_error",
-                "UIDは9桁または10桁で入力してください。",
+                (
+                    "UIDは9桁または"
+                    "10桁で入力してください。"
+                ),
             ),
             entered_uid=uid_text,
-            ranking_count=get_cached_ranking_count(),
+            ranking_count=(
+                get_cached_ranking_count()
+            ),
         )
 
     uid = int(uid_text)
@@ -371,25 +529,25 @@ def rank():
             uid
         )
 
+        server = detect_server(uid)
+
         # 採点したUIDを母数用テーブルへ保存
         save_scored_profile(
             uid=uid,
-            profile_value=player_data[
-                "profile_value"
-            ],
-            total_score=player_data[
-                "total"
-            ],
-            rank_name=player_data[
-                "rank"
-            ],
-            server=detect_server(uid),
+            profile_value=(
+                player_data["profile_value"]
+            ),
+            total_score=(
+                player_data["total"]
+            ),
+            rank_name=(
+                player_data["rank"]
+            ),
+            server=server,
         )
 
         # 公開ランキングに登録済みか確認
-        registered_player = get_player(
-            uid
-        )
+        registered_player = get_player(uid)
 
         player_data.update(
             {
@@ -419,7 +577,8 @@ def rank():
     except Exception as error:
         print(
             "プロフィール取得エラー: "
-            f"{type(error).__name__}: {error}"
+            f"{type(error).__name__}: "
+            f"{error}"
         )
 
         return render_template(
@@ -430,12 +589,15 @@ def rank():
                 "profile_fetch_error",
                 (
                     "プロフィールを取得できませんでした。"
-                    "UID、ゲーム内プロフィールの公開設定、"
-                    "Enka.Networkの状態を確認してください。"
+                    "UID、ゲーム内プロフィールの"
+                    "公開設定、Enka.Networkの状態を"
+                    "確認してください。"
                 ),
             ),
             entered_uid=uid_text,
-            ranking_count=get_cached_ranking_count(),
+            ranking_count=(
+                get_cached_ranking_count()
+            ),
         )
 
 
@@ -444,11 +606,22 @@ def rank():
     methods=["POST"],
 )
 def register_ranking():
-    """最新情報でランキングへ登録・更新する。"""
+    """
+    ランキングへ登録・更新する。
 
-    language = get_language(source="form")
+    結果表示から60秒以内の場合は、
+    Enkaの取得結果を再利用する。
+    """
+
+    language = get_language(
+        source="form"
+    )
     texts = get_texts(language)
-    uid_text = request.form.get("uid", "").strip()
+
+    uid_text = request.form.get(
+        "uid",
+        "",
+    ).strip()
 
     if not uid_text.isdigit():
         return redirect(
@@ -457,7 +630,10 @@ def register_ranking():
                 lang=language,
                 ranking_error=texts.get(
                     "ranking_invalid_uid_error",
-                    "ランキング登録用UIDが正しくありません。",
+                    (
+                        "ランキング登録用UIDが"
+                        "正しくありません。"
+                    ),
                 ),
             )
         )
@@ -469,7 +645,10 @@ def register_ranking():
                 lang=language,
                 ranking_error=texts.get(
                     "uid_length_error",
-                    "UIDは9桁または10桁で入力してください。",
+                    (
+                        "UIDは9桁または"
+                        "10桁で入力してください。"
+                    ),
                 ),
             )
         )
@@ -477,8 +656,14 @@ def register_ranking():
     uid = int(uid_text)
 
     try:
-        player_data = calculate_player_data(uid)
-        profile_value = player_data["profile_value"]
+        # 結果表示時のキャッシュを利用する
+        player_data = calculate_player_data(
+            uid
+        )
+
+        profile_value = player_data[
+            "profile_value"
+        ]
 
         if profile_value <= 0:
             return redirect(
@@ -502,26 +687,44 @@ def register_ranking():
         save_or_update_player(
             uid=uid,
             nickname=player.nickname,
-            icon_url=player_data["icon_url"],
+            icon_url=player_data[
+                "icon_url"
+            ],
             profile_value=profile_value,
-            total_score=player_data["total"],
-            rank_name=player_data["rank"],
-            achievements=player_data["achievements"],
-            theater_act=player_data["theater_act"],
-            theater_stars=player_data["theater_stars"],
-            friendship_count=player_data["friendship_count"],
-            abyss_stars=player_data["abyss_stars"],
-            stygian_difficulty=player_data["stygian_difficulty"],
-            stygian_clear_time=player_data["stygian_clear_time"],
+            total_score=player_data[
+                "total"
+            ],
+            rank_name=player_data[
+                "rank"
+            ],
+            achievements=player_data[
+                "achievements"
+            ],
+            theater_act=player_data[
+                "theater_act"
+            ],
+            theater_stars=player_data[
+                "theater_stars"
+            ],
+            friendship_count=player_data[
+                "friendship_count"
+            ],
+            abyss_stars=player_data[
+                "abyss_stars"
+            ],
+            stygian_difficulty=player_data[
+                "stygian_difficulty"
+            ],
+            stygian_clear_time=player_data[
+                "stygian_clear_time"
+            ],
             server=server,
         )
 
         clear_ranking_count_cache()
 
-        position = get_scored_position(
-            uid,
-            server=server,
-        )
+        # 以前あったget_scored_position()は、
+        # 取得結果を使用していなかったため削除
 
         return redirect(
             url_for(
@@ -536,7 +739,8 @@ def register_ranking():
     except Exception as error:
         print(
             "ランキング登録エラー: "
-            f"{type(error).__name__}: {error}"
+            f"{type(error).__name__}: "
+            f"{error}"
         )
 
         return redirect(
@@ -548,7 +752,8 @@ def register_ranking():
                     "ranking_registration_error",
                     (
                         "ランキング登録に失敗しました。"
-                        "時間を置いて再度お試しください。"
+                        "時間を置いて"
+                        "再度お試しください。"
                     ),
                 ),
             )
@@ -587,16 +792,20 @@ def ranking():
         selected_server = "global"
 
     if player_uid_text.isdigit():
-        player_uid = int(player_uid_text)
+        player_uid = int(
+            player_uid_text
+        )
 
         current_player = get_player(
             player_uid
         )
 
         if current_player:
-            current_position = get_player_position(
-                player_uid,
-                server=selected_server,
+            current_position = (
+                get_player_position(
+                    player_uid,
+                    server=selected_server,
+                )
             )
 
     entries = get_ranking(
@@ -620,24 +829,39 @@ def ranking():
         if len(uid_text) >= 6:
             entry["masked_uid"] = (
                 uid_text[:3]
-                + "*" * (len(uid_text) - 6)
+                + "*" * (
+                    len(uid_text) - 6
+                )
                 + uid_text[-3:]
             )
         else:
-            entry["masked_uid"] = uid_text
+            entry["masked_uid"] = (
+                uid_text
+            )
 
-        updated_at = entry.get("updated_at")
+        updated_at = entry.get(
+            "updated_at"
+        )
 
-        if hasattr(updated_at, "strftime"):
+        if hasattr(
+            updated_at,
+            "strftime",
+        ):
             entry["updated_at_text"] = (
-                updated_at.strftime("%Y-%m-%d")
+                updated_at.strftime(
+                    "%Y-%m-%d"
+                )
             )
         else:
-            entry["updated_at_text"] = str(
-                updated_at or ""
-            )[:10]
+            entry["updated_at_text"] = (
+                str(
+                    updated_at or ""
+                )[:10]
+            )
 
-        ranking_entries.append(entry)
+        ranking_entries.append(
+            entry
+        )
 
     server_labels = {
         "global": "Global",
@@ -653,12 +877,16 @@ def ranking():
         "ranking.html",
         language=language,
         texts=texts,
-        ranking_entries=ranking_entries,
+        ranking_entries=(
+            ranking_entries
+        ),
         ranking_count=ranking_count,
         selected_server=selected_server,
-        selected_server_label=server_labels[
-            selected_server
-        ],
+        selected_server_label=(
+            server_labels[
+                selected_server
+            ]
+        ),
         current_player=current_player,
         current_position=current_position,
     )
