@@ -14,6 +14,7 @@ from database import (
     get_player_position,
     get_ranking,
     get_ranking_count,
+    get_scored_rank_summary,
     save_or_update_player,
     save_scored_profile,
 )
@@ -160,6 +161,35 @@ def detect_server(uid):
         return "cn"
 
     return "unknown"
+
+
+def get_percentile_tier(top_percent):
+    """
+    上位何％かに応じて、ピラミッド表示用の階層を返す。
+    """
+
+    if top_percent is None:
+        return None
+
+    if top_percent <= 0.1:
+        return "top_0_1"
+
+    if top_percent <= 1:
+        return "top_1"
+
+    if top_percent <= 5:
+        return "top_5"
+
+    if top_percent <= 10:
+        return "top_10"
+
+    if top_percent <= 25:
+        return "top_25"
+
+    if top_percent <= 50:
+        return "top_50"
+
+    return "top_100"
 
 
 def fetch_and_calculate_player_data(uid):
@@ -546,6 +576,26 @@ def rank():
             server=server,
         )
 
+        # 採点した全UIDを母数にした
+        # 順位・人数・上位割合を1回のSQLで取得
+        scored_summary = get_scored_rank_summary(
+            uid,
+            server="global",
+        )
+
+        scored_position = scored_summary[
+            "position"
+        ]
+        scored_count = scored_summary[
+            "total"
+        ]
+        top_percent = scored_summary[
+            "top_percent"
+        ]
+        percentile_tier = get_percentile_tier(
+            top_percent
+        )
+
         # 公開ランキングに登録済みか確認
         registered_player = get_player(uid)
 
@@ -565,6 +615,18 @@ def rank():
                 "is_ranking_registered": (
                     registered_player
                     is not None
+                ),
+                "scored_position": (
+                    scored_position
+                ),
+                "scored_count": (
+                    scored_count
+                ),
+                "top_percent": (
+                    top_percent
+                ),
+                "percentile_tier": (
+                    percentile_tier
                 ),
             }
         )

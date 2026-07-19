@@ -557,3 +557,97 @@ def get_scored_position(
         return None
 
     return int(position)
+
+def get_scored_rank_summary(
+    uid,
+    server=None,
+):
+    """
+    採点済みUID全体での順位・母数・上位割合を
+    1回のSQLで取得する。
+
+    server指定時はサーバー別で集計する。
+    serverがNoneまたは"global"の場合は全体集計。
+    """
+
+    uid = int(uid)
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            if server and server != "global":
+                cursor.execute(
+                    """
+                    SELECT
+                        target.uid,
+                        (
+                            SELECT COUNT(*) + 1
+                            FROM scored_profiles AS ranked
+                            WHERE
+                                ranked.profile_value
+                                    > target.profile_value
+                                AND ranked.server = %s
+                        ) AS position,
+                        (
+                            SELECT COUNT(*)
+                            FROM scored_profiles
+                            WHERE server = %s
+                        ) AS total
+                    FROM scored_profiles AS target
+                    WHERE
+                        target.uid = %s
+                        AND target.server = %s
+                    """,
+                    (
+                        str(server),
+                        str(server),
+                        uid,
+                        str(server),
+                    ),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT
+                        target.uid,
+                        (
+                            SELECT COUNT(*) + 1
+                            FROM scored_profiles AS ranked
+                            WHERE
+                                ranked.profile_value
+                                    > target.profile_value
+                        ) AS position,
+                        (
+                            SELECT COUNT(*)
+                            FROM scored_profiles
+                        ) AS total
+                    FROM scored_profiles AS target
+                    WHERE target.uid = %s
+                    """,
+                    (uid,),
+                )
+
+            row = cursor.fetchone()
+
+    if not row:
+        return {
+            "position": None,
+            "total": 0,
+            "top_percent": None,
+        }
+
+    position = int(row["position"])
+    total = int(row["total"])
+
+    if total <= 0:
+        top_percent = None
+    else:
+        top_percent = round(
+            position / total * 100,
+            1,
+        )
+
+    return {
+        "position": position,
+        "total": total,
+        "top_percent": top_percent,
+    }
