@@ -321,3 +321,173 @@ def get_ranking_count(
             row = cursor.fetchone()
 
     return int(row["total"])
+
+def save_scored_profile(
+    uid,
+    profile_value,
+    total_score,
+    rank_name,
+    server,
+):
+    """
+    採点したUIDを保存する。
+    既に存在する場合は最新情報へ更新する。
+    """
+
+    updated_at = datetime.now().astimezone()
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO scored_profiles (
+                    uid,
+                    profile_value,
+                    total_score,
+                    rank_name,
+                    server,
+                    updated_at
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
+                ON CONFLICT (uid)
+                DO UPDATE SET
+                    profile_value = EXCLUDED.profile_value,
+                    total_score = EXCLUDED.total_score,
+                    rank_name = EXCLUDED.rank_name,
+                    server = EXCLUDED.server,
+                    updated_at = EXCLUDED.updated_at
+                """,
+                (
+                    int(uid),
+                    int(profile_value),
+                    int(total_score),
+                    str(rank_name),
+                    str(server),
+                    updated_at,
+                ),
+            )
+
+        connection.commit()
+
+
+def get_scored_count(server=None):
+    """
+    採点済み人数を取得する。
+    """
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+
+            if server and server != "global":
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS total
+                    FROM scored_profiles
+                    WHERE server = %s
+                    """,
+                    (str(server),),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS total
+                    FROM scored_profiles
+                    """
+                )
+
+            row = cursor.fetchone()
+
+    return int(row["total"])
+
+def get_scored_count(server=None):
+    """
+    採点済み人数を取得する。
+    """
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+
+            if server and server != "global":
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS total
+                    FROM scored_profiles
+                    WHERE server = %s
+                    """,
+                    (str(server),),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS total
+                    FROM scored_profiles
+                    """
+                )
+
+            row = cursor.fetchone()
+
+    return int(row["total"])
+
+
+def get_scored_position(
+    uid,
+    server=None,
+):
+    """
+    採点済みUID全体での順位を取得する。
+    """
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT profile_value
+                FROM scored_profiles
+                WHERE uid = %s
+                """,
+                (int(uid),),
+            )
+
+            player = cursor.fetchone()
+
+            if not player:
+                return None
+
+            profile_value = int(
+                player["profile_value"]
+            )
+
+            if server and server != "global":
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) + 1 AS position
+                    FROM scored_profiles
+                    WHERE
+                        profile_value > %s
+                        AND server = %s
+                    """,
+                    (
+                        profile_value,
+                        str(server),
+                    ),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) + 1 AS position
+                    FROM scored_profiles
+                    WHERE profile_value > %s
+                    """,
+                    (profile_value,),
+                )
+
+            row = cursor.fetchone()
+
+    return int(row["position"])

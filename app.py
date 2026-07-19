@@ -14,8 +14,11 @@ from database import (
     get_player_position,
     get_ranking,
     get_ranking_count,
+    get_scored_position,
     save_or_update_player,
+    save_scored_profile,
 )
+
 from enka_api import get_profile
 from lang import get_texts
 from score import (
@@ -354,20 +357,33 @@ def rank():
 
     try:
         player_data = calculate_player_data(uid)
+
+        save_scored_profile(
+            uid=uid,
+            profile_value=player_data["profile_value"],
+            total_score=player_data["total"],
+            rank_name=player_data["rank"],
+            server=detect_server(uid),
+        )
+
         registered_player = get_player(uid)
+        ranking_position = get_scored_position(
+            uid,
+            server=detect_server(uid),
+        )
 
         player_data.update(
-            {
-                "language": language,
-                "texts": texts,
-                "ranking_registered": ranking_registered,
-                "ranking_position": ranking_position,
-                "ranking_error": ranking_error,
-                "is_ranking_registered": (
-                    registered_player is not None
-                ),
-            }
-        )
+    {
+        "language": language,
+        "texts": texts,
+        "ranking_registered": ranking_registered,
+        "ranking_position": ranking_position,
+        "ranking_error": ranking_error,
+        "is_ranking_registered": (
+            registered_player is not None
+        ),
+    }
+)
 
         return render_template(
             "result.html",
@@ -476,7 +492,7 @@ def register_ranking():
 
         clear_ranking_count_cache()
 
-        position = get_player_position(
+        position = get_scored_position(
             uid,
             server=server,
         )
