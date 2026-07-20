@@ -27,6 +27,9 @@ pool = ConnectionPool(
     },
     open=True,
 )
+print("========================================")
+print("ConnectionPool initialized successfully")
+print("========================================")
 
 
 def get_connection():
@@ -37,6 +40,18 @@ def get_connection():
     with文を抜けると接続は切断されず、
     接続プールへ返却される。
     """
+
+    try:
+        stats = pool.get_stats()
+
+        print("========== ConnectionPool ==========")
+        print(f"connections_num : {stats.get('connections_num')}")
+        print(f"pool_available  : {stats.get('pool_available')}")
+        print(f"requests_waiting: {stats.get('requests_waiting')}")
+        print("====================================")
+
+    except Exception as error:
+        print("ConnectionPool get_stats failed:", error)
 
     return pool.connection()
 
