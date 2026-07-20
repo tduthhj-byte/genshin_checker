@@ -3,9 +3,8 @@ from contextlib import contextmanager
 from datetime import datetime
 
 from dotenv import load_dotenv
-from psycopg import OperationalError
+from psycopg import OperationalError, connect
 from psycopg.rows import dict_row
-from psycopg_pool import ConnectionPool, PoolTimeout
 
 
 load_dotenv()
@@ -18,130 +17,42 @@ if not DATABASE_URL:
     )
 
 
-# Supabase PostgreSQLへの接続を使い回す。
-# Gunicornの各ワーカーごとに、この接続プールが作成される。
-def on_pool_reconnect_failed(pool_instance):
-    """
-    reconnect_timeout以内にDB接続を
-    再作成できなかった場合にログを出す。
-    """
-
-    try:
-        stats = pool_instance.get_stats()
-    except Exception:
-        stats = {}
-
-    print(
-        "[ConnectionPool] reconnect failed:",
-        {
-            "connections_num": stats.get(
-                "connections_num"
-            ),
-            "pool_available": stats.get(
-                "pool_available"
-            ),
-            "requests_waiting": stats.get(
-                "requests_waiting"
-            ),
-        },
-        flush=True,
-    )
-
-
-pool = ConnectionPool(
-    conninfo=DATABASE_URL,
-    min_size=0,
-    max_size=3,
-    timeout=2,
-    max_idle=60,
-    max_lifetime=240,
-    check=ConnectionPool.check_connection,
-    reconnect_timeout=10,
-    reconnect_failed=on_pool_reconnect_failed,
-    kwargs={
-        "row_factory": dict_row,
-        "connect_timeout": 5,
-        # Supabase Transaction Poolerを使う場合にも安全な設定
-        "prepare_threshold": None,
-        "keepalives": 1,
-        "keepalives_idle": 30,
-        "keepalives_interval": 10,
-        "keepalives_count": 3,
-    },
-    open=True,
-)
-
-print(
-    "ConnectionPool initialized successfully",
-    flush=True,
-)
-
-
-def print_pool_stats(label="status"):
-    """
-    Renderのログへ接続プール状態を出力する。
-    """
-
-    try:
-        stats = pool.get_stats()
-
-        print(
-            f"[ConnectionPool:{label}]",
-            f"connections_num="
-            f"{stats.get('connections_num')}",
-            f"pool_available="
-            f"{stats.get('pool_available')}",
-            f"requests_waiting="
-            f"{stats.get('requests_waiting')}",
-            flush=True,
-        )
-
-    except Exception as error:
-        print(
-            "[ConnectionPool] get_stats failed:",
-            f"{type(error).__name__}: {error}",
-            flush=True,
-        )
-
-
+# Supabase側のSession / Transaction Poolerへ、
+# DB処理のたびに短時間だけ接続する。
+#
+# アプリ内のConnectionPoolは使用しない。
+# 接続作成に失敗したローカルプールが待機列を
+# 抱え続ける問題を避けるため。
 @contextmanager
 def get_connection():
     """
-    Supabase PostgreSQLの接続プールから接続を取得する。
+    Supabase PostgreSQLへ短時間だけ接続する。
 
-    アクセス集中時は2秒だけ待機し、
-    取得できなければ即座にPoolTimeoutを送出する。
-
-    再試行とpool.check()は行わない。
-    待機リクエストが雪だるま式に増えるのを防ぐ。
+    - 接続待ちは最大5秒
+    - prepared statementを無効化
+      （Transaction Poolerでも利用可能）
+    - withを抜けると必ず接続を閉じる
+    - 例外時は自動rollback
     """
 
     try:
-        with pool.connection(
-            timeout=2
+        with connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+            connect_timeout=5,
+            prepare_threshold=None,
+            application_name=(
+                "genshin-profile-rank"
+            ),
         ) as connection:
             yield connection
 
-    except PoolTimeout as error:
-        print_pool_stats(
-            "acquire-timeout"
-        )
-
-        print(
-            "[ConnectionPool] PoolTimeout:",
-            str(error),
-            flush=True,
-        )
-
-        raise
-
     except OperationalError as error:
         print(
-            "[ConnectionPool] OperationalError:",
+            "[DatabaseConnection] OperationalError:",
             str(error),
             flush=True,
         )
-
         raise
 
 
