@@ -14,10 +14,9 @@ from database import (
     get_player_position,
     get_ranking,
     get_ranking_count,
-    get_scored_rank_summary,
     get_statistics,
+    save_and_get_profile_summary,
     save_or_update_player,
-    save_scored_profile,
 )
 
 from enka_api import get_profile
@@ -532,6 +531,20 @@ def calculate_player_data(
     return player_data.copy()
 
 
+@app.route("/health")
+def health():
+    """
+    Render用ヘルスチェック。
+
+    DBやEnkaへ接続せず、
+    Flaskが動作していることだけを確認する。
+    """
+
+    return {
+        "status": "ok",
+    }, 200
+
+
 @app.route("/")
 def home():
     language = get_language()
@@ -640,91 +653,16 @@ def rank():
 
     uid = int(uid_text)
 
+    # Enka取得・採点処理。
+    # ここが失敗した場合だけプロフィール取得エラーを表示する。
     try:
         player_data = calculate_player_data(
             uid
         )
 
-        server = detect_server(uid)
-
-        # 採点したUIDを母数用テーブルへ保存
-        save_scored_profile(
-            uid=uid,
-            profile_value=(
-                player_data["profile_value"]
-            ),
-            total_score=(
-                player_data["total"]
-            ),
-            rank_name=(
-                player_data["rank"]
-            ),
-            server=server,
-        )
-
-        # 採点した全UIDを母数にした
-        # 順位・人数・上位割合を1回のSQLで取得
-        scored_summary = get_scored_rank_summary(
-            uid,
-            server="global",
-        )
-
-        scored_position = scored_summary[
-            "position"
-        ]
-        scored_count = scored_summary[
-            "total"
-        ]
-        top_percent = scored_summary[
-            "top_percent"
-        ]
-        percentile_tier = get_percentile_tier(
-            top_percent
-        )
-
-        # 公開ランキングに登録済みか確認
-        registered_player = get_player(uid)
-
-        player_data.update(
-            {
-                "language": language,
-                "texts": texts,
-                "ranking_registered": (
-                    ranking_registered
-                ),
-                "ranking_position": (
-                    ranking_position
-                ),
-                "ranking_error": (
-                    ranking_error
-                ),
-                "is_ranking_registered": (
-                    registered_player
-                    is not None
-                ),
-                "scored_position": (
-                    scored_position
-                ),
-                "scored_count": (
-                    scored_count
-                ),
-                "top_percent": (
-                    top_percent
-                ),
-                "percentile_tier": (
-                    percentile_tier
-                ),
-            }
-        )
-
-        return render_template(
-            "result.html",
-            **player_data,
-        )
-
     except Exception as error:
         print(
-            "プロフィール取得エラー: "
+            "Enkaプロフィール取得エラー: "
             f"{type(error).__name__}: "
             f"{error}"
         )
@@ -747,6 +685,113 @@ def rank():
                 get_cached_ranking_count()
             ),
         )
+
+    server = detect_server(uid)
+
+    # DBが一時的に利用できない場合の初期値。
+    scored_position = None
+    scored_count = 0
+    top_percent = None
+    percentile_tier = None
+    is_ranking_registered = False
+    database_error = ""
+
+    # 保存・順位・母数・登録済み確認を
+    # 1回のDB接続でまとめて実行する。
+    try:
+        profile_summary = (
+            save_and_get_profile_summary(
+                uid=uid,
+                profile_value=(
+                    player_data[
+                        "profile_value"
+                    ]
+                ),
+                total_score=(
+                    player_data["total"]
+                ),
+                rank_name=(
+                    player_data["rank"]
+                ),
+                server=server,
+            )
+        )
+
+        scored_position = profile_summary[
+            "position"
+        ]
+        scored_count = profile_summary[
+            "total"
+        ]
+        top_percent = profile_summary[
+            "top_percent"
+        ]
+        is_ranking_registered = (
+            profile_summary[
+                "is_ranking_registered"
+            ]
+        )
+
+        percentile_tier = (
+            get_percentile_tier(
+                top_percent
+            )
+        )
+
+    except Exception as error:
+        print(
+            "採点結果DB処理エラー: "
+            f"{type(error).__name__}: "
+            f"{error}"
+        )
+
+        database_error = texts.get(
+            "database_temporary_error",
+            (
+                "現在、ランキング・順位情報を"
+                "一時的に取得できません。"
+                "採点結果は正常に表示されています。"
+            ),
+        )
+
+    player_data.update(
+        {
+            "language": language,
+            "texts": texts,
+            "ranking_registered": (
+                ranking_registered
+            ),
+            "ranking_position": (
+                ranking_position
+            ),
+            "ranking_error": (
+                ranking_error
+            ),
+            "is_ranking_registered": (
+                is_ranking_registered
+            ),
+            "scored_position": (
+                scored_position
+            ),
+            "scored_count": (
+                scored_count
+            ),
+            "top_percent": (
+                top_percent
+            ),
+            "percentile_tier": (
+                percentile_tier
+            ),
+            "database_error": (
+                database_error
+            ),
+        }
+    )
+
+    return render_template(
+        "result.html",
+        **player_data,
+    )
 
 
 @app.route("/statistics")
@@ -1028,76 +1073,95 @@ def ranking():
     if selected_server not in allowed_servers:
         selected_server = "global"
 
-    if player_uid_text.isdigit():
-        player_uid = int(
-            player_uid_text
-        )
-
-        current_player = get_player(
-            player_uid
-        )
-
-        if current_player:
-            current_position = (
-                get_player_position(
-                    player_uid,
-                    server=selected_server,
-                )
-            )
-
-    entries = get_ranking(
-        limit=100,
-        server=selected_server,
-    )
-
-    ranking_count = get_ranking_count(
-        server=selected_server,
-    )
-
     ranking_entries = []
+    ranking_count = 0
+    ranking_page_error = ""
 
-    for position, entry in enumerate(
-        entries,
-        start=1,
-    ):
-        entry["position"] = position
-        uid_text = str(entry["uid"])
+    try:
+        if player_uid_text.isdigit():
+            player_uid = int(
+                player_uid_text
+            )
 
-        if len(uid_text) >= 6:
-            entry["masked_uid"] = (
-                uid_text[:3]
-                + "*" * (
-                    len(uid_text) - 6
+            current_player = get_player(
+                player_uid
+            )
+
+            if current_player:
+                current_position = (
+                    get_player_position(
+                        player_uid,
+                        server=selected_server,
+                    )
                 )
-                + uid_text[-3:]
-            )
-        else:
-            entry["masked_uid"] = (
-                uid_text
-            )
 
-        updated_at = entry.get(
-            "updated_at"
+        entries = get_ranking(
+            limit=100,
+            server=selected_server,
         )
 
-        if hasattr(
-            updated_at,
-            "strftime",
+        ranking_count = get_ranking_count(
+            server=selected_server,
+        )
+
+        for position, entry in enumerate(
+            entries,
+            start=1,
         ):
-            entry["updated_at_text"] = (
-                updated_at.strftime(
-                    "%Y-%m-%d"
+            entry["position"] = position
+            uid_text = str(entry["uid"])
+
+            if len(uid_text) >= 6:
+                entry["masked_uid"] = (
+                    uid_text[:3]
+                    + "*" * (
+                        len(uid_text) - 6
+                    )
+                    + uid_text[-3:]
                 )
-            )
-        else:
-            entry["updated_at_text"] = (
-                str(
-                    updated_at or ""
-                )[:10]
+            else:
+                entry["masked_uid"] = (
+                    uid_text
+                )
+
+            updated_at = entry.get(
+                "updated_at"
             )
 
-        ranking_entries.append(
-            entry
+            if hasattr(
+                updated_at,
+                "strftime",
+            ):
+                entry["updated_at_text"] = (
+                    updated_at.strftime(
+                        "%Y-%m-%d"
+                    )
+                )
+            else:
+                entry["updated_at_text"] = (
+                    str(
+                        updated_at or ""
+                    )[:10]
+                )
+
+            ranking_entries.append(
+                entry
+            )
+
+    except Exception as error:
+        print(
+            "ランキングページDBエラー: "
+            f"{type(error).__name__}: "
+            f"{error}"
+        )
+
+        ranking_page_error = texts.get(
+            "ranking_temporary_error",
+            (
+                "現在ランキングを一時的に"
+                "取得できません。"
+                "時間を置いて再度お試しください。"
+            ),
         )
 
     server_labels = {
@@ -1126,6 +1190,9 @@ def ranking():
         ),
         current_player=current_player,
         current_position=current_position,
+        ranking_page_error=(
+            ranking_page_error
+        ),
     )
 
 
