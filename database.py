@@ -621,6 +621,118 @@ def save_scored_profile(
         connection.commit()
 
 
+
+def save_and_get_profile_summary(
+    uid,
+    profile_value,
+    total_score,
+    rank_name,
+    server,
+):
+    """
+    採点済みプロフィールの保存、
+    全体順位・母数・上位割合の取得、
+    公開ランキング登録済み確認を
+    1回のDB接続でまとめて行う。
+    """
+
+    uid = int(uid)
+    updated_at = datetime.now().astimezone()
+
+    with get_connection() as connection:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO scored_profiles (
+                        uid,
+                        profile_value,
+                        total_score,
+                        rank_name,
+                        server,
+                        updated_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (uid) DO UPDATE SET
+                        profile_value = EXCLUDED.profile_value,
+                        total_score = EXCLUDED.total_score,
+                        rank_name = EXCLUDED.rank_name,
+                        server = EXCLUDED.server,
+                        updated_at = EXCLUDED.updated_at
+                    """,
+                    (
+                        uid,
+                        int(profile_value),
+                        int(total_score),
+                        str(rank_name),
+                        str(server),
+                        updated_at,
+                    ),
+                )
+
+                cursor.execute(
+                    """
+                    SELECT
+                        (
+                            SELECT COUNT(*) + 1
+                            FROM scored_profiles AS ranked
+                            WHERE ranked.profile_value
+                                > target.profile_value
+                        ) AS position,
+                        (
+                            SELECT COUNT(*)
+                            FROM scored_profiles
+                        ) AS total,
+                        EXISTS (
+                            SELECT 1
+                            FROM ranking_entries
+                            WHERE uid = %s
+                        ) AS is_ranking_registered
+                    FROM scored_profiles AS target
+                    WHERE target.uid = %s
+                    """,
+                    (uid, uid),
+                )
+
+                row = cursor.fetchone()
+
+            connection.commit()
+
+        except Exception:
+            connection.rollback()
+            raise
+
+    if not row:
+        return {
+            "position": None,
+            "total": 0,
+            "top_percent": None,
+            "is_ranking_registered": False,
+        }
+
+    position = (
+        int(row["position"])
+        if row.get("position") is not None
+        else None
+    )
+    total = int(row.get("total") or 0)
+
+    top_percent = (
+        round(position / total * 100, 1)
+        if position is not None and total > 0
+        else None
+    )
+
+    return {
+        "position": position,
+        "total": total,
+        "top_percent": top_percent,
+        "is_ranking_registered": bool(
+            row.get("is_ranking_registered")
+        ),
+    }
+
+
 def get_scored_count(
     server=None,
 ):
