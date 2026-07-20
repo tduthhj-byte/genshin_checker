@@ -22,15 +22,19 @@ pool = ConnectionPool(
     conninfo=DATABASE_URL,
     min_size=1,
     max_size=5,
+    timeout=10,
+    max_idle=120,
+    max_lifetime=600,
+    check=ConnectionPool.check_connection,
     kwargs={
         "row_factory": dict_row,
     },
     open=True,
 )
+
 print("========================================")
 print("ConnectionPool initialized successfully")
 print("========================================")
-
 
 def get_connection():
     """
