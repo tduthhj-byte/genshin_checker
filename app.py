@@ -71,19 +71,48 @@ STATISTICS_CACHE_SECONDS = 900
 
 
 def get_cached_ranking_count():
-    """ランキング登録人数を10分間保存して再利用する。"""
+    """
+    ランキング登録人数を10分間キャッシュする。
+
+    DB接続に失敗した場合は、
+    前回取得できた値を返してトップページを守る。
+    """
 
     now = time.time()
 
+    # 有効なキャッシュがあればDBへ接続しない
     if now < RANKING_COUNT_CACHE["expires_at"]:
         return RANKING_COUNT_CACHE["value"]
 
-    count = get_ranking_count()
+    try:
+        count = get_ranking_count()
 
-    RANKING_COUNT_CACHE["value"] = count
-    RANKING_COUNT_CACHE["expires_at"] = now + 600
+        RANKING_COUNT_CACHE["value"] = int(count)
+        RANKING_COUNT_CACHE["expires_at"] = (
+            now + 600
+        )
 
-    return count
+        return int(count)
+
+    except Exception as error:
+        print(
+            "ランキング人数取得エラー: "
+            f"{type(error).__name__}: "
+            f"{error}"
+        )
+
+        # DB障害中にアクセスのたび
+        # 10秒待たされないよう、1分間は再試行しない
+        RANKING_COUNT_CACHE["expires_at"] = (
+            now + 60
+        )
+
+        return int(
+            RANKING_COUNT_CACHE.get(
+                "value",
+                0,
+            )
+        )
 
 
 def clear_ranking_count_cache():
