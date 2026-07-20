@@ -50,17 +50,19 @@ def on_pool_reconnect_failed(pool_instance):
 
 pool = ConnectionPool(
     conninfo=DATABASE_URL,
-    min_size=2,
-    max_size=5,
-    timeout=10,
-    max_idle=120,
-    max_lifetime=600,
+    min_size=0,
+    max_size=3,
+    timeout=2,
+    max_idle=60,
+    max_lifetime=240,
     check=ConnectionPool.check_connection,
-    reconnect_timeout=60,
+    reconnect_timeout=10,
     reconnect_failed=on_pool_reconnect_failed,
     kwargs={
         "row_factory": dict_row,
-        "connect_timeout": 10,
+        "connect_timeout": 5,
+        # Supabase Transaction Poolerを使う場合にも安全な設定
+        "prepare_threshold": None,
         "keepalives": 1,
         "keepalives_idle": 30,
         "keepalives_interval": 10,
@@ -105,75 +107,37 @@ def print_pool_stats(label="status"):
 @contextmanager
 def get_connection():
     """
-    Supabase PostgreSQLの接続プールから
-    接続を取得する。
+    Supabase PostgreSQLの接続プールから接続を取得する。
 
-    貸し出し前に接続の生存確認を行う。
+    アクセス集中時は2秒だけ待機し、
+    取得できなければ即座にPoolTimeoutを送出する。
 
-    接続取得前にPoolTimeoutになった場合だけ、
-    プールを再検査して1回再取得する。
-
-    SQL実行中のOperationalErrorでは、
-    二重書き込み防止のためSQLを自動再実行しない。
+    再試行とpool.check()は行わない。
+    待機リクエストが雪だるま式に増えるのを防ぐ。
     """
 
-    acquired = False
-
     try:
-        try:
-            with pool.connection(
-                timeout=10
-            ) as connection:
-                acquired = True
-                yield connection
-
-        except PoolTimeout:
-            if acquired:
-                raise
-
-            print_pool_stats(
-                "acquire-timeout"
-            )
-
-            pool.check()
-
-            print(
-                "[ConnectionPool] "
-                "retrying acquisition once",
-                flush=True,
-            )
-
-            with pool.connection(
-                timeout=10
-            ) as connection:
-                yield connection
-
-    except OperationalError as error:
-        print(
-            "[ConnectionPool] OperationalError:",
-            str(error),
-            flush=True,
-        )
-
-        try:
-            pool.check()
-        except Exception as check_error:
-            print(
-                "[ConnectionPool] check failed:",
-                f"{type(check_error).__name__}: "
-                f"{check_error}",
-                flush=True,
-            )
-
-        raise
+        with pool.connection(
+            timeout=2
+        ) as connection:
+            yield connection
 
     except PoolTimeout as error:
         print_pool_stats(
-            "final-timeout"
+            "acquire-timeout"
         )
 
         print(
             "[ConnectionPool] PoolTimeout:",
+            str(error),
+            flush=True,
+        )
+
+        raise
+
+    except OperationalError as error:
+        print(
+            "[ConnectionPool] OperationalError:",
             str(error),
             flush=True,
         )
