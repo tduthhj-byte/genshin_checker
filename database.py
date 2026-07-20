@@ -1,9 +1,11 @@
 import os
+from contextlib import contextmanager
 from datetime import datetime
 
 from dotenv import load_dotenv
+from psycopg import OperationalError
 from psycopg.rows import dict_row
-from psycopg_pool import ConnectionPool
+from psycopg_pool import ConnectionPool, PoolTimeout
 
 
 load_dotenv()
@@ -18,6 +20,34 @@ if not DATABASE_URL:
 
 # Supabase PostgreSQLへの接続を使い回す。
 # Gunicornの各ワーカーごとに、この接続プールが作成される。
+def on_pool_reconnect_failed(pool_instance):
+    """
+    reconnect_timeout以内にDB接続を
+    再作成できなかった場合にログを出す。
+    """
+
+    try:
+        stats = pool_instance.get_stats()
+    except Exception:
+        stats = {}
+
+    print(
+        "[ConnectionPool] reconnect failed:",
+        {
+            "connections_num": stats.get(
+                "connections_num"
+            ),
+            "pool_available": stats.get(
+                "pool_available"
+            ),
+            "requests_waiting": stats.get(
+                "requests_waiting"
+            ),
+        },
+        flush=True,
+    )
+
+
 pool = ConnectionPool(
     conninfo=DATABASE_URL,
     min_size=2,
@@ -26,7 +56,8 @@ pool = ConnectionPool(
     max_idle=120,
     max_lifetime=600,
     check=ConnectionPool.check_connection,
-    reconnect_timeout=30,
+    reconnect_timeout=60,
+    reconnect_failed=on_pool_reconnect_failed,
     kwargs={
         "row_factory": dict_row,
         "connect_timeout": 10,
@@ -38,32 +69,116 @@ pool = ConnectionPool(
     open=True,
 )
 
-print("========================================")
-print("ConnectionPool initialized successfully")
-print("========================================")
+print(
+    "ConnectionPool initialized successfully",
+    flush=True,
+)
 
-def get_connection():
+
+def print_pool_stats(label="status"):
     """
-    Supabase PostgreSQLの接続プールから
-    接続を取得する。
-
-    with文を抜けると接続は切断されず、
-    接続プールへ返却される。
+    Renderのログへ接続プール状態を出力する。
     """
 
     try:
         stats = pool.get_stats()
 
-        print("========== ConnectionPool ==========")
-        print(f"connections_num : {stats.get('connections_num')}")
-        print(f"pool_available  : {stats.get('pool_available')}")
-        print(f"requests_waiting: {stats.get('requests_waiting')}")
-        print("====================================")
+        print(
+            f"[ConnectionPool:{label}]",
+            f"connections_num="
+            f"{stats.get('connections_num')}",
+            f"pool_available="
+            f"{stats.get('pool_available')}",
+            f"requests_waiting="
+            f"{stats.get('requests_waiting')}",
+            flush=True,
+        )
 
     except Exception as error:
-        print("ConnectionPool get_stats failed:", error)
+        print(
+            "[ConnectionPool] get_stats failed:",
+            f"{type(error).__name__}: {error}",
+            flush=True,
+        )
 
-    return pool.connection()
+
+@contextmanager
+def get_connection():
+    """
+    Supabase PostgreSQLの接続プールから
+    接続を取得する。
+
+    貸し出し前に接続の生存確認を行う。
+
+    接続取得前にPoolTimeoutになった場合だけ、
+    プールを再検査して1回再取得する。
+
+    SQL実行中のOperationalErrorでは、
+    二重書き込み防止のためSQLを自動再実行しない。
+    """
+
+    acquired = False
+
+    try:
+        try:
+            with pool.connection(
+                timeout=10
+            ) as connection:
+                acquired = True
+                yield connection
+
+        except PoolTimeout:
+            if acquired:
+                raise
+
+            print_pool_stats(
+                "acquire-timeout"
+            )
+
+            pool.check()
+
+            print(
+                "[ConnectionPool] "
+                "retrying acquisition once",
+                flush=True,
+            )
+
+            with pool.connection(
+                timeout=10
+            ) as connection:
+                yield connection
+
+    except OperationalError as error:
+        print(
+            "[ConnectionPool] OperationalError:",
+            str(error),
+            flush=True,
+        )
+
+        try:
+            pool.check()
+        except Exception as check_error:
+            print(
+                "[ConnectionPool] check failed:",
+                f"{type(check_error).__name__}: "
+                f"{check_error}",
+                flush=True,
+            )
+
+        raise
+
+    except PoolTimeout as error:
+        print_pool_stats(
+            "final-timeout"
+        )
+
+        print(
+            "[ConnectionPool] PoolTimeout:",
+            str(error),
+            flush=True,
+        )
+
+        raise
 
 
 def create_table():
