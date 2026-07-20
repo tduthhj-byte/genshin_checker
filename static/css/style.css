@@ -1380,6 +1380,7 @@ button:hover,
 }
 /* ========================================
    採点カード背景画像
+   ※このコードへ丸ごと置き換える
 ======================================== */
 
 .profile-value-card,
@@ -1391,14 +1392,13 @@ button:hover,
 .friendship-card {
     position: relative;
     overflow: hidden;
-
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-
     isolation: isolate;
+
+    /* 元のカード背景を残す */
+    background: var(--card-light);
 }
 
+/* 背景画像 */
 .profile-value-card::before,
 .ar-card::before,
 .achievement-card::before,
@@ -1408,13 +1408,48 @@ button:hover,
 .friendship-card::before {
     content: "";
     position: absolute;
-    inset: 0;
 
-    background: rgba(15, 18, 30, 0.58);
+    /*
+     * 枠線より1px内側に画像を配置
+     * 2pxにすると、さらに余裕ができます
+     */
+    inset: 1px;
+
+    border-radius: calc(14px - 1px);
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 
     z-index: 0;
 }
 
+/* 画像を暗くして文字を読みやすくする */
+.profile-value-card::after,
+.ar-card::after,
+.achievement-card::after,
+.theater-card::after,
+.stygian-card::after,
+.abyss-card::after,
+.friendship-card::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+
+    border-radius: calc(14px - 1px);
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(15, 18, 30, 0.66),
+            rgba(15, 18, 30, 0.54),
+            rgba(15, 18, 30, 0.70)
+        );
+
+    z-index: 1;
+}
+
+/* 文字・ゲージを画像より手前へ表示 */
 .profile-value-card > *,
 .ar-card > *,
 .achievement-card > *,
@@ -1423,40 +1458,47 @@ button:hover,
 .abyss-card > *,
 .friendship-card > * {
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
-/* プロフィール価値 */
-.profile-value-card {
-    background-image: url("../images/profile_value.webp");
+/* プロフィール値 */
+.profile-value-card::before {
+    background-image:
+        url("../images/profile_value.webp");
 }
 
 /* 冒険ランク */
-.ar-card {
-    background-image: url("../images/HoYoWiki-image.webp");
+.ar-card::before {
+    background-image:
+        url("../images/HoYoWiki-image.webp");
 }
 
 /* アチーブメント */
-.achievement-card {
-    background-image: url("../images/Achievement.webp");
+.achievement-card::before {
+    background-image:
+        url("../images/Achievement.webp");
 }
 
 /* 幻想シアター */
-.theater-card {
-    background-image: url("../images/Domain_Mysterious_Room.webp");
+.theater-card::before {
+    background-image:
+        url("../images/Domain_Mysterious_Room.webp");
 }
 
 /* 幽境の激戦 */
-.stygian-card {
-    background-image: url("../images/Stygian_Onslaught.webp");
+.stygian-card::before {
+    background-image:
+        url("../images/Stygian_Onslaught.webp");
 }
 
 /* 深境螺旋 */
-.abyss-card {
-    background-image: url("../images/Spiral_Abyss.webp");
+.abyss-card::before {
+    background-image:
+        url("../images/Spiral_Abyss.webp");
 }
 
 /* 好感度 */
-.friendship-card {
-    background-image: url("../images/columbina.webp");
+.friendship-card::before {
+    background-image:
+        url("../images/columbina.webp");
 }
