@@ -1378,3 +1378,85 @@ button:hover,
         text-align: center;
     }
 }
+/* ========================================
+   採点カード背景画像
+======================================== */
+
+.profile-value-card,
+.ar-card,
+.achievement-card,
+.theater-card,
+.stygian-card,
+.abyss-card,
+.friendship-card {
+    position: relative;
+    overflow: hidden;
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    isolation: isolate;
+}
+
+.profile-value-card::before,
+.ar-card::before,
+.achievement-card::before,
+.theater-card::before,
+.stygian-card::before,
+.abyss-card::before,
+.friendship-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background: rgba(15, 18, 30, 0.58);
+
+    z-index: 0;
+}
+
+.profile-value-card > *,
+.ar-card > *,
+.achievement-card > *,
+.theater-card > *,
+.stygian-card > *,
+.abyss-card > *,
+.friendship-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* プロフィール価値 */
+.profile-value-card {
+    background-image: url("../images/profile_value.webp");
+}
+
+/* 冒険ランク */
+.ar-card {
+    background-image: url("../images/HoYoWiki-image.webp");
+}
+
+/* アチーブメント */
+.achievement-card {
+    background-image: url("../images/Achievement.webp");
+}
+
+/* 幻想シアター */
+.theater-card {
+    background-image: url("../images/Domain_Mysterious_Room.webp");
+}
+
+/* 幽境の激戦 */
+.stygian-card {
+    background-image: url("../images/Stygian_Onslaught.webp");
+}
+
+/* 深境螺旋 */
+.abyss-card {
+    background-image: url("../images/Spiral_Abyss.webp");
+}
+
+/* 好感度 */
+.friendship-card {
+    background-image: url("../images/columbina.webp");
+}
