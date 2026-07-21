@@ -1502,3 +1502,62 @@ button:hover,
     background-image:
         url("../images/columbina.webp");
 }
+/* ========================================
+   トップページ背景
+======================================== */
+
+body.home-page {
+    position: relative;
+    min-height: 100vh;
+
+    background-image:
+        linear-gradient(
+            rgba(13, 16, 28, 0.48),
+            rgba(13, 16, 28, 0.72)
+        ),
+        url("../images/FB852543-B7B5-4F05-BE95-43431AE004CB.webp");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+/* 背景の上でも入力カードを読みやすくする */
+body.home-page .input-card {
+    background:
+        linear-gradient(
+            rgba(30, 34, 49, 0.88),
+            rgba(30, 34, 49, 0.94)
+        );
+
+    border: 1px solid rgba(255, 255, 255, 0.16);
+
+    box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.48),
+        0 0 40px rgba(119, 200, 243, 0.08);
+
+    backdrop-filter: blur(12px);
+}
+
+/* 背景上で見出しを少し強調 */
+body.home-page h1 {
+    text-shadow:
+        0 2px 18px rgba(0, 0, 0, 0.65),
+        0 0 20px rgba(241, 207, 115, 0.15);
+}
+
+body.home-page .description,
+body.home-page .notice {
+    color: rgba(255, 255, 255, 0.82);
+    text-shadow:
+        0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* スマホでは固定背景を解除して表示崩れを防ぐ */
+@media (max-width: 640px) {
+    body.home-page {
+        background-attachment: scroll;
+        background-position: center top;
+    }
+}
